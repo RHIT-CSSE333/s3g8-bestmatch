@@ -22,7 +22,7 @@
         "kind": 2,
         "importPath": "ImportAPP",
         "description": "ImportAPP",
-        "peekOfCode": "def populate_database(csv_file, host, user, password, database):\n    # Connect to the database\n    connection = mysql.connector.connect(\n        host=host, user=user, password=password, database=database\n    )\n    cursor = connection.cursor()\n    try:\n        # Read the CSV file and separate data for each table\n        table1_data = []\n        table2_data = []",
+        "peekOfCode": "def populate_database(csv_file, host, user, password, database, port):\n    connection = mysql.connector.connect(\n        host=host, user=user, port=port, password=password, database=database\n    )\n    cursor = connection.cursor()\n    print(\"Connected to the database.\")\n    try:\n        table1_data = []\n        table2_data = []\n        with open(csv_file, \"r\") as file:",
         "detail": "ImportAPP",
         "documentation": {}
     },
@@ -31,7 +31,25 @@
         "kind": 2,
         "importPath": "ImportAPP",
         "description": "ImportAPP",
-        "peekOfCode": "def main():\n    csv_file = \"data.csv\"\n    host = \"golem\"  # or your MySQL host\n    user = \"bestmatch_esm\"\n    password = \"Findyourbestmatch123\"\n    database = \"BestMatchDatabase\"\n    populate_database(csv_file, host, user, password, database)",
+        "peekOfCode": "def main():\n    print(\"Populating the database...\")\n    csv_file = \"data.csv\"\n    host = \"golem.csse.rose-hulman.edu\"\n    port = 3306\n    user = \"bestmatch_esm\"\n    password = \"Findyourbestmatch123\"\n    database = \"BestMatchDatabase\"\n    populate_database(csv_file, host, user, password, database, port)\nif __name__ == \"__main__\":",
+        "detail": "ImportAPP",
+        "documentation": {}
+    },
+    {
+        "label": "populate_table1",
+        "kind": 2,
+        "importPath": "ImportAPP",
+        "description": "ImportAPP",
+        "peekOfCode": "def populate_table1(cursor, data):\n    print(\"Populating table1...\")\n    pass\ndef populate_table2(cursor, data):\n    print(\"Populating table2...\")\n    pass",
+        "detail": "ImportAPP",
+        "documentation": {}
+    },
+    {
+        "label": "populate_table2",
+        "kind": 2,
+        "importPath": "ImportAPP",
+        "description": "ImportAPP",
+        "peekOfCode": "def populate_table2(cursor, data):\n    print(\"Populating table2...\")\n    pass",
         "detail": "ImportAPP",
         "documentation": {}
     }

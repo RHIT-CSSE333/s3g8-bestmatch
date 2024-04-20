@@ -2,64 +2,58 @@ import csv
 import mysql.connector
 
 
-def populate_database(csv_file, host, user, password, database):
-    # Connect to the database
+def populate_database(csv_file, host, user, password, database, port):
     connection = mysql.connector.connect(
-        host=host, user=user, password=password, database=database
+        host=host, user=user, port=port, password=password, database=database
     )
     cursor = connection.cursor()
+    print("Connected to the database.")
 
     try:
-        # Read the CSV file and separate data for each table
         table1_data = []
         table2_data = []
         with open(csv_file, "r") as file:
             reader = csv.reader(file)
-            next(reader)  # Skip header row if exists
+            next(reader)
             for row in reader:
-                # Separate data for each table
-                # For example, if first column determines which table the data belongs to
-                if row[0] == 'table1':
-                    table1_data.append(row[1:])  # Exclude the table indicator
-                elif row[0] == 'table2':
+                if row[0] == "table1":
+                    table1_data.append(row[1:])
+                elif row[0] == "table2":
                     table2_data.append(row[1:])
 
-        # Populate table1
         populate_table1(cursor, table1_data)
 
-        # Populate table2
         populate_table2(cursor, table2_data)
 
-        # Commit changes
         connection.commit()
         print("Data inserted successfully.")
     except Exception as e:
         print(f"Error: {e}")
-        # Rollback changes if there's an error
         connection.rollback()
     finally:
-        # Close connection
         connection.close()
 
-
-    # Populate table1
-        def populate_table1(cursor, data):
-            # Implementation of populate_table1 function
-            pass
         
-        
-    # Populate table2
-        def populate_table2(cursor, data):
-            # Implementation of populate_table2 function
-            pass
-
-
 
 def main():
+    print("Populating the database...")
     csv_file = "data.csv"
-    host = "golem"  # or your MySQL host
+    host = "golem.csse.rose-hulman.edu"
+    port = 3306
     user = "bestmatch_esm"
     password = "Findyourbestmatch123"
     database = "BestMatchDatabase"
-    populate_database(csv_file, host, user, password, database)
+    populate_database(csv_file, host, user, password, database, port)
 
+
+if __name__ == "__main__":
+    main()
+
+
+def populate_table1(cursor, data):
+    print("Populating table1...")
+    pass
+
+def populate_table2(cursor, data):
+    print("Populating table2...")
+    pass
