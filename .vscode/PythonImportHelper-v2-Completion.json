@@ -1,0 +1,38 @@
+[
+    {
+        "label": "csv",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "csv",
+        "description": "csv",
+        "detail": "csv",
+        "documentation": {}
+    },
+    {
+        "label": "mysql.connector",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "mysql.connector",
+        "description": "mysql.connector",
+        "detail": "mysql.connector",
+        "documentation": {}
+    },
+    {
+        "label": "populate_database",
+        "kind": 2,
+        "importPath": "ImportAPP",
+        "description": "ImportAPP",
+        "peekOfCode": "def populate_database(csv_file, host, user, password, database):\n    # Connect to BestMatch database\n    connection = mysql.connector.connect(\n        host=host, user=user, password=password, database=database\n    )\n    cursor = connection.cursor()\n    # Read CSV file and insert data into the database\n    with open(csv_file, \"r\") as file:\n        reader = csv.reader(file)\n        next(reader)  # Skip header row if exists",
+        "detail": "ImportAPP",
+        "documentation": {}
+    },
+    {
+        "label": "main",
+        "kind": 2,
+        "importPath": "ImportAPP",
+        "description": "ImportAPP",
+        "peekOfCode": "def main():\n    csv_file = \"data.csv\"\n    host = \"golem\"  # or your MySQL host\n    user = \"bestmatch_esm\"\n    password = \"Findyourbestmatch123\"\n    database = \"BestMatchDatabase\"\n    populate_database(csv_file, host, user, password, database)",
+        "detail": "ImportAPP",
+        "documentation": {}
+    }
+]
