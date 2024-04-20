@@ -9,12 +9,12 @@
         "documentation": {}
     },
     {
-        "label": "mysql.connector",
+        "label": "pyodbc",
         "kind": 6,
         "isExtraImport": true,
-        "importPath": "mysql.connector",
-        "description": "mysql.connector",
-        "detail": "mysql.connector",
+        "importPath": "pyodbc",
+        "description": "pyodbc",
+        "detail": "pyodbc",
         "documentation": {}
     },
     {
@@ -22,16 +22,7 @@
         "kind": 2,
         "importPath": "ImportAPP",
         "description": "ImportAPP",
-        "peekOfCode": "def populate_database(csv_file, host, user, password, database, port):\n    connection = mysql.connector.connect(\n        host=host, user=user, port=port, password=password, database=database\n    )\n    cursor = connection.cursor()\n    print(\"Connected to the database.\")\n    try:\n        table1_data = []\n        table2_data = []\n        with open(csv_file, \"r\") as file:",
-        "detail": "ImportAPP",
-        "documentation": {}
-    },
-    {
-        "label": "main",
-        "kind": 2,
-        "importPath": "ImportAPP",
-        "description": "ImportAPP",
-        "peekOfCode": "def main():\n    print(\"Populating the database...\")\n    csv_file = \"data.csv\"\n    host = \"golem.csse.rose-hulman.edu\"\n    port = 3306\n    user = \"bestmatch_esm\"\n    password = \"Findyourbestmatch123\"\n    database = \"BestMatchDatabase\"\n    populate_database(csv_file, host, user, password, database, port)\nif __name__ == \"__main__\":",
+        "peekOfCode": "def populate_database(csv_file, server, database, username, password):\n    connection = pyodbc.connect(\n        'DRIVER={ODBC Driver 17 for SQL Server};'\n        f'SERVER={server};'\n        f'DATABASE={database};'\n        f'UID={username};'\n        f'PWD={password}'\n    )\n    print(\"Connected to the database.\")\n    cursor = connection.cursor()",
         "detail": "ImportAPP",
         "documentation": {}
     },
@@ -40,7 +31,7 @@
         "kind": 2,
         "importPath": "ImportAPP",
         "description": "ImportAPP",
-        "peekOfCode": "def populate_table1(cursor, data):\n    print(\"Populating table1...\")\n    pass\ndef populate_table2(cursor, data):\n    print(\"Populating table2...\")\n    pass",
+        "peekOfCode": "def populate_table1(cursor, data):\n    print(\"Populating table1...\")\ndef populate_table2(cursor, data):\n    print(\"Populating table2...\")\ndef main():\n    print(\"Populating the database...\")\n    csv_file = \"data.csv\"\n    server = \"golem.csse.rose-hulman.edu\"\n    database = \"BestMatchDatabase\"\n    username = \"bestmatch_esm\"",
         "detail": "ImportAPP",
         "documentation": {}
     },
@@ -49,7 +40,16 @@
         "kind": 2,
         "importPath": "ImportAPP",
         "description": "ImportAPP",
-        "peekOfCode": "def populate_table2(cursor, data):\n    print(\"Populating table2...\")\n    pass",
+        "peekOfCode": "def populate_table2(cursor, data):\n    print(\"Populating table2...\")\ndef main():\n    print(\"Populating the database...\")\n    csv_file = \"data.csv\"\n    server = \"golem.csse.rose-hulman.edu\"\n    database = \"BestMatchDatabase\"\n    username = \"bestmatch_esm\"\n    password = \"Findyourbestmatch123\"\n    populate_database(csv_file, server, database, username, password)",
+        "detail": "ImportAPP",
+        "documentation": {}
+    },
+    {
+        "label": "main",
+        "kind": 2,
+        "importPath": "ImportAPP",
+        "description": "ImportAPP",
+        "peekOfCode": "def main():\n    print(\"Populating the database...\")\n    csv_file = \"data.csv\"\n    server = \"golem.csse.rose-hulman.edu\"\n    database = \"BestMatchDatabase\"\n    username = \"bestmatch_esm\"\n    password = \"Findyourbestmatch123\"\n    populate_database(csv_file, server, database, username, password)\nif __name__ == \"__main__\":\n    main()",
         "detail": "ImportAPP",
         "documentation": {}
     }
