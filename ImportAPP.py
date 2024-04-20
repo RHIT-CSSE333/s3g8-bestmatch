@@ -3,26 +3,56 @@ import mysql.connector
 
 
 def populate_database(csv_file, host, user, password, database):
-    # Connect to BestMatch database
+    # Connect to the database
     connection = mysql.connector.connect(
         host=host, user=user, password=password, database=database
     )
     cursor = connection.cursor()
 
-    # Read CSV file and insert data into the database
-    with open(csv_file, "r") as file:
-        reader = csv.reader(file)
-        next(reader)  # Skip header row if exists
-        for row in reader:
-            # Insert data into your tables using SQL INSERT statements
-            cursor.execute(
-                "INSERT INTO your_table_name (column1, column2, ...) VALUES (%s, %s, ...), INSERT INTO your_table_name (column1, column2, ...) VALUES (%s, %s, ...)",
-                row,
-            )
+    try:
+        # Read the CSV file and separate data for each table
+        table1_data = []
+        table2_data = []
+        with open(csv_file, "r") as file:
+            reader = csv.reader(file)
+            next(reader)  # Skip header row if exists
+            for row in reader:
+                # Separate data for each table
+                # For example, if first column determines which table the data belongs to
+                if row[0] == 'table1':
+                    table1_data.append(row[1:])  # Exclude the table indicator
+                elif row[0] == 'table2':
+                    table2_data.append(row[1:])
 
-    # Commit changes and close the connection
-    connection.commit()
-    connection.close()
+        # Populate table1
+        populate_table1(cursor, table1_data)
+
+        # Populate table2
+        populate_table2(cursor, table2_data)
+
+        # Commit changes
+        connection.commit()
+        print("Data inserted successfully.")
+    except Exception as e:
+        print(f"Error: {e}")
+        # Rollback changes if there's an error
+        connection.rollback()
+    finally:
+        # Close connection
+        connection.close()
+
+
+    # Populate table1
+        def populate_table1(cursor, data):
+            # Implementation of populate_table1 function
+            pass
+        
+        
+    # Populate table2
+        def populate_table2(cursor, data):
+            # Implementation of populate_table2 function
+            pass
+
 
 
 def main():

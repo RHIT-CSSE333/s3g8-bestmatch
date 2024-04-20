@@ -22,7 +22,7 @@
         "kind": 2,
         "importPath": "ImportAPP",
         "description": "ImportAPP",
-        "peekOfCode": "def populate_database(csv_file, host, user, password, database):\n    # Connect to BestMatch database\n    connection = mysql.connector.connect(\n        host=host, user=user, password=password, database=database\n    )\n    cursor = connection.cursor()\n    # Read CSV file and insert data into the database\n    with open(csv_file, \"r\") as file:\n        reader = csv.reader(file)\n        next(reader)  # Skip header row if exists",
+        "peekOfCode": "def populate_database(csv_file, host, user, password, database):\n    # Connect to the database\n    connection = mysql.connector.connect(\n        host=host, user=user, password=password, database=database\n    )\n    cursor = connection.cursor()\n    try:\n        # Read the CSV file and separate data for each table\n        table1_data = []\n        table2_data = []",
         "detail": "ImportAPP",
         "documentation": {}
     },
