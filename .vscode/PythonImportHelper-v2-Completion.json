@@ -18,6 +18,15 @@
         "documentation": {}
     },
     {
+        "label": "spacy",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "spacy",
+        "description": "spacy",
+        "detail": "spacy",
+        "documentation": {}
+    },
+    {
         "label": "populate_database",
         "kind": 2,
         "importPath": "ImportAPP",
@@ -67,7 +76,16 @@
         "kind": 2,
         "importPath": "populatetabletest",
         "description": "populatetabletest",
-        "peekOfCode": "def populate_database(csv_file, server, user, password, database):\n    connection_string = f\"DRIVER={{SQL Server}};SERVER={server};DATABASE={database};UID={user};PWD={password}\"\n    connection = pyodbc.connect(connection_string)\n    cursor = connection.cursor()\n    try:\n        person_data = []\n        preference_data = []\n        language_set = set()\n        hobby_data = []\n        with open(csv_file, mode=\"r\", encoding=\"utf-8-sig\") as file:",
+        "peekOfCode": "def populate_database(csv_file, server, user, password, database):\n    connection_string = f\"DRIVER={{SQL Server}};SERVER={server};DATABASE={database};UID={user};PWD={password}\"\n    connection = pyodbc.connect(connection_string)\n    cursor = connection.cursor()\n    try:\n        person_data = []\n        preference_data = []\n        language_set = set()\n        hobby_data = []\n        match_data = []",
+        "detail": "populatetabletest",
+        "documentation": {}
+    },
+    {
+        "label": "textCompare",
+        "kind": 2,
+        "importPath": "populatetabletest",
+        "description": "populatetabletest",
+        "peekOfCode": "def textCompare(String1, String2):\n    nlp = spacy.load(\"en_core_web_lg\")\n    doc1 = nlp(String1)\n    doc2 = nlp(String2)\n    return doc1.similarity(doc2)\ndef main():\n    csv_file = \"DatingAppData_Direct.csv\"\n    server = \"golem.csse.rose-hulman.edu\"\n    user = \"bestmatch_esm\"\n    password = \"Findyourbestmatch123\"",
         "detail": "populatetabletest",
         "documentation": {}
     },
