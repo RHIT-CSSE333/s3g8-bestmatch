@@ -52,5 +52,59 @@
         "peekOfCode": "def main():\n    print(\"Populating the database...\")\n    csv_file = \"data.csv\"\n    server = \"golem.csse.rose-hulman.edu\"\n    database = \"BestMatchDatabase\"\n    username = \"bestmatch_esm\"\n    password = \"Findyourbestmatch123\"\n    populate_database(csv_file, server, database, username, password)\nif __name__ == \"__main__\":\n    main()",
         "detail": "ImportAPP",
         "documentation": {}
+    },
+    {
+        "label": "populate_table",
+        "kind": 2,
+        "importPath": "populatetabletest",
+        "description": "populatetabletest",
+        "peekOfCode": "def populate_table(cursor, table_name, data, columns):\n    placeholders = \", \".join([\"?\"] * len(columns))\n    columns = \", \".join(columns)\n    sql = f\"INSERT INTO {table_name} ({columns}) VALUES ({placeholders})\"\n    cursor.executemany(sql, data)\ndef populate_database(csv_file, server, user, password, database):\n    connection_string = f\"DRIVER={{SQL Server}};SERVER={server};DATABASE={database};UID={user};PWD={password}\"\n    connection = pyodbc.connect(connection_string)\n    cursor = connection.cursor()\n    try:",
+        "detail": "populatetabletest",
+        "documentation": {}
+    },
+    {
+        "label": "populate_database",
+        "kind": 2,
+        "importPath": "populatetabletest",
+        "description": "populatetabletest",
+        "peekOfCode": "def populate_database(csv_file, server, user, password, database):\n    connection_string = f\"DRIVER={{SQL Server}};SERVER={server};DATABASE={database};UID={user};PWD={password}\"\n    connection = pyodbc.connect(connection_string)\n    cursor = connection.cursor()\n    try:\n        person_data = []\n        preference_data = []\n        language_set = set()\n        hobby_data = []\n        with open(csv_file, mode=\"r\", encoding=\"utf-8-sig\") as file:",
+        "detail": "populatetabletest",
+        "documentation": {}
+    },
+    {
+        "label": "main",
+        "kind": 2,
+        "importPath": "populatetabletest",
+        "description": "populatetabletest",
+        "peekOfCode": "def main():\n    csv_file = \"DatingAppData_Direct.csv\"\n    server = \"golem.csse.rose-hulman.edu\"\n    user = \"bestmatch_esm\"\n    password = \"Findyourbestmatch123\"\n    database = \"BestMatchDatabase\"\n    populate_database(csv_file, server, user, password, database)\nif __name__ == \"__main__\":\n    main()",
+        "detail": "populatetabletest",
+        "documentation": {}
+    },
+    {
+        "label": "populate_table",
+        "kind": 2,
+        "importPath": "testconnection",
+        "description": "testconnection",
+        "peekOfCode": "def populate_table(cursor, table_name, data, columns):\n    placeholders = ', '.join(['?'] * len(columns))  # Change to '?' for pyodbc\n    columns = ', '.join(columns)\n    sql = f\"INSERT INTO {table_name} ({columns}) VALUES ({placeholders})\"\n    cursor.executemany(sql, data)\ndef populate_database(csv_file, server, user, password, database):\n    connection_string = f'DRIVER={{SQL Server}};SERVER={server};DATABASE={database};UID={user};PWD={password}'\n    connection = pyodbc.connect(connection_string)\n    cursor = connection.cursor()\n    try:",
+        "detail": "testconnection",
+        "documentation": {}
+    },
+    {
+        "label": "populate_database",
+        "kind": 2,
+        "importPath": "testconnection",
+        "description": "testconnection",
+        "peekOfCode": "def populate_database(csv_file, server, user, password, database):\n    connection_string = f'DRIVER={{SQL Server}};SERVER={server};DATABASE={database};UID={user};PWD={password}'\n    connection = pyodbc.connect(connection_string)\n    cursor = connection.cursor()\n    try:\n        with open(csv_file, mode='r', encoding='utf-8-sig') as file:\n            reader = csv.DictReader(file)\n            person_data = []\n            preference_data = []\n            language_data = []",
+        "detail": "testconnection",
+        "documentation": {}
+    },
+    {
+        "label": "main",
+        "kind": 2,
+        "importPath": "testconnection",
+        "description": "testconnection",
+        "peekOfCode": "def main():\n    csv_file = \"data.csv\"\n    server = 'golem.csse.rose-hulman.edu'  # Update with your MSSQL server\n    user = 'bestmatch_esm'\n    password = 'Findyourbestmatch123'\n    database = 'BestMatchDatabase'\n    populate_database(csv_file, server, user, password, database)\nif __name__ == '__main__':\n    main()",
+        "detail": "testconnection",
+        "documentation": {}
     }
 ]
