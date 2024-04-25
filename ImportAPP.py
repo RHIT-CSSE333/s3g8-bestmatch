@@ -1,13 +1,17 @@
 import csv
-import mysql.connector
+import pyodbc
 
 
-def populate_database(csv_file, host, user, password, database, port):
-    connection = mysql.connector.connect(
-        host=host, user=user, port=port, password=password, database=database
+def populate_database(csv_file, server, database, username, password):
+    connection = pyodbc.connect(
+        'DRIVER={ODBC Driver 17 for SQL Server};'
+        f'SERVER={server};'
+        f'DATABASE={database};'
+        f'UID={username};'
+        f'PWD={password}'
     )
-    cursor = connection.cursor()
     print("Connected to the database.")
+    cursor = connection.cursor()
 
     try:
         table1_data = []
@@ -32,28 +36,29 @@ def populate_database(csv_file, host, user, password, database, port):
         connection.rollback()
     finally:
         connection.close()
-
         
-
-def main():
-    print("Populating the database...")
-    csv_file = "data.csv"
-    host = "golem.csse.rose-hulman.edu"
-    port = 3306
-    user = "bestmatch_esm"
-    password = "Findyourbestmatch123"
-    database = "BestMatchDatabase"
-    populate_database(csv_file, host, user, password, database, port)
-
-
-if __name__ == "__main__":
-    main()
 
 
 def populate_table1(cursor, data):
     print("Populating table1...")
-    pass
+    
+
 
 def populate_table2(cursor, data):
     print("Populating table2...")
-    pass
+    
+
+
+
+def main():
+    print("Populating the database...")
+    csv_file = "data.csv"
+    server = "golem.csse.rose-hulman.edu"
+    database = "BestMatchDatabase"
+    username = "bestmatch_esm"
+    password = "Findyourbestmatch123"
+    populate_database(csv_file, server, database, username, password)
+
+
+if __name__ == "__main__":
+    main()
