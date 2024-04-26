@@ -1,11 +1,19 @@
 [
     {
-        "label": "csv",
+        "label": "tkinter",
         "kind": 6,
         "isExtraImport": true,
-        "importPath": "csv",
-        "description": "csv",
-        "detail": "csv",
+        "importPath": "tkinter",
+        "description": "tkinter",
+        "detail": "tkinter",
+        "documentation": {}
+    },
+    {
+        "label": "messagebox",
+        "importPath": "tkinter",
+        "description": "tkinter",
+        "isExtraImport": true,
+        "detail": "tkinter",
         "documentation": {}
     },
     {
@@ -18,12 +26,156 @@
         "documentation": {}
     },
     {
+        "label": "csv",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "csv",
+        "description": "csv",
+        "detail": "csv",
+        "documentation": {}
+    },
+    {
+        "label": "random",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "random",
+        "description": "random",
+        "detail": "random",
+        "documentation": {}
+    },
+    {
+        "label": "traceback",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "traceback",
+        "description": "traceback",
+        "detail": "traceback",
+        "documentation": {}
+    },
+    {
         "label": "spacy",
         "kind": 6,
         "isExtraImport": true,
         "importPath": "spacy",
         "description": "spacy",
         "detail": "spacy",
+        "documentation": {}
+    },
+    {
+        "label": "show_login",
+        "kind": 2,
+        "importPath": "GUI",
+        "description": "GUI",
+        "peekOfCode": "def show_login():\n    welcome_frame.pack_forget()\n    login_frame.pack()\ndef show_create_account():\n    welcome_frame.pack_forget()\n    # This is where you would call another function to display the registration form\n    messagebox.showinfo(\"Create Account\", \"Here you could implement registration functionality.\")\ndef login():\n    email = entry_email.get()\n    password = entry_password.get()",
+        "detail": "GUI",
+        "documentation": {}
+    },
+    {
+        "label": "show_create_account",
+        "kind": 2,
+        "importPath": "GUI",
+        "description": "GUI",
+        "peekOfCode": "def show_create_account():\n    welcome_frame.pack_forget()\n    # This is where you would call another function to display the registration form\n    messagebox.showinfo(\"Create Account\", \"Here you could implement registration functionality.\")\ndef login():\n    email = entry_email.get()\n    password = entry_password.get()\n    try:\n        conn = pyodbc.connect(\n            'DRIVER={ODBC Driver 17 for SQL Server};'",
+        "detail": "GUI",
+        "documentation": {}
+    },
+    {
+        "label": "login",
+        "kind": 2,
+        "importPath": "GUI",
+        "description": "GUI",
+        "peekOfCode": "def login():\n    email = entry_email.get()\n    password = entry_password.get()\n    try:\n        conn = pyodbc.connect(\n            'DRIVER={ODBC Driver 17 for SQL Server};'\n            'SERVER=golem.csse.rose-hulman.edu;'\n            'DATABASE=BestMatchDatabase;'\n            'UID=bestmatch_esm;'\n            'PWD=Findyourbestmatch123'",
+        "detail": "GUI",
+        "documentation": {}
+    },
+    {
+        "label": "app",
+        "kind": 5,
+        "importPath": "GUI",
+        "description": "GUI",
+        "peekOfCode": "app = tk.Tk()\napp.geometry('500x250')\napp.title(\"Best Match Dating System\")\n# Welcome Frame\nwelcome_frame = tk.Frame(app)\nwelcome_frame.pack(fill='both', expand=True)\nwelcome_label = tk.Label(welcome_frame, text=\"Welcome to Best Match Dating System!\", font=(\"Helvetica\", 16))\nwelcome_label.pack(pady=20)\nnew_user_label = tk.Label(welcome_frame, text=\"New User?\")\nnew_user_label.pack()",
+        "detail": "GUI",
+        "documentation": {}
+    },
+    {
+        "label": "welcome_frame",
+        "kind": 5,
+        "importPath": "GUI",
+        "description": "GUI",
+        "peekOfCode": "welcome_frame = tk.Frame(app)\nwelcome_frame.pack(fill='both', expand=True)\nwelcome_label = tk.Label(welcome_frame, text=\"Welcome to Best Match Dating System!\", font=(\"Helvetica\", 16))\nwelcome_label.pack(pady=20)\nnew_user_label = tk.Label(welcome_frame, text=\"New User?\")\nnew_user_label.pack()\ncreate_account_btn = tk.Button(welcome_frame, text=\"Create Account\", command=show_create_account)\ncreate_account_btn.pack(pady=5)\nexisting_user_label = tk.Label(welcome_frame, text=\"Existing User?\")\nexisting_user_label.pack()",
+        "detail": "GUI",
+        "documentation": {}
+    },
+    {
+        "label": "welcome_label",
+        "kind": 5,
+        "importPath": "GUI",
+        "description": "GUI",
+        "peekOfCode": "welcome_label = tk.Label(welcome_frame, text=\"Welcome to Best Match Dating System!\", font=(\"Helvetica\", 16))\nwelcome_label.pack(pady=20)\nnew_user_label = tk.Label(welcome_frame, text=\"New User?\")\nnew_user_label.pack()\ncreate_account_btn = tk.Button(welcome_frame, text=\"Create Account\", command=show_create_account)\ncreate_account_btn.pack(pady=5)\nexisting_user_label = tk.Label(welcome_frame, text=\"Existing User?\")\nexisting_user_label.pack()\nlogin_btn = tk.Button(welcome_frame, text=\"Login\", command=show_login)\nlogin_btn.pack(pady=5)",
+        "detail": "GUI",
+        "documentation": {}
+    },
+    {
+        "label": "new_user_label",
+        "kind": 5,
+        "importPath": "GUI",
+        "description": "GUI",
+        "peekOfCode": "new_user_label = tk.Label(welcome_frame, text=\"New User?\")\nnew_user_label.pack()\ncreate_account_btn = tk.Button(welcome_frame, text=\"Create Account\", command=show_create_account)\ncreate_account_btn.pack(pady=5)\nexisting_user_label = tk.Label(welcome_frame, text=\"Existing User?\")\nexisting_user_label.pack()\nlogin_btn = tk.Button(welcome_frame, text=\"Login\", command=show_login)\nlogin_btn.pack(pady=5)\n# Login Frame\nlogin_frame = tk.Frame(app)",
+        "detail": "GUI",
+        "documentation": {}
+    },
+    {
+        "label": "create_account_btn",
+        "kind": 5,
+        "importPath": "GUI",
+        "description": "GUI",
+        "peekOfCode": "create_account_btn = tk.Button(welcome_frame, text=\"Create Account\", command=show_create_account)\ncreate_account_btn.pack(pady=5)\nexisting_user_label = tk.Label(welcome_frame, text=\"Existing User?\")\nexisting_user_label.pack()\nlogin_btn = tk.Button(welcome_frame, text=\"Login\", command=show_login)\nlogin_btn.pack(pady=5)\n# Login Frame\nlogin_frame = tk.Frame(app)\ntk.Label(login_frame, text=\"Email:\").pack()\nentry_email = tk.Entry(login_frame, width=25)",
+        "detail": "GUI",
+        "documentation": {}
+    },
+    {
+        "label": "existing_user_label",
+        "kind": 5,
+        "importPath": "GUI",
+        "description": "GUI",
+        "peekOfCode": "existing_user_label = tk.Label(welcome_frame, text=\"Existing User?\")\nexisting_user_label.pack()\nlogin_btn = tk.Button(welcome_frame, text=\"Login\", command=show_login)\nlogin_btn.pack(pady=5)\n# Login Frame\nlogin_frame = tk.Frame(app)\ntk.Label(login_frame, text=\"Email:\").pack()\nentry_email = tk.Entry(login_frame, width=25)\nentry_email.pack()\ntk.Label(login_frame, text=\"Password:\").pack()",
+        "detail": "GUI",
+        "documentation": {}
+    },
+    {
+        "label": "login_btn",
+        "kind": 5,
+        "importPath": "GUI",
+        "description": "GUI",
+        "peekOfCode": "login_btn = tk.Button(welcome_frame, text=\"Login\", command=show_login)\nlogin_btn.pack(pady=5)\n# Login Frame\nlogin_frame = tk.Frame(app)\ntk.Label(login_frame, text=\"Email:\").pack()\nentry_email = tk.Entry(login_frame, width=25)\nentry_email.pack()\ntk.Label(login_frame, text=\"Password:\").pack()\nentry_password = tk.Entry(login_frame, show=\"*\", width=25)\nentry_password.pack()",
+        "detail": "GUI",
+        "documentation": {}
+    },
+    {
+        "label": "login_frame",
+        "kind": 5,
+        "importPath": "GUI",
+        "description": "GUI",
+        "peekOfCode": "login_frame = tk.Frame(app)\ntk.Label(login_frame, text=\"Email:\").pack()\nentry_email = tk.Entry(login_frame, width=25)\nentry_email.pack()\ntk.Label(login_frame, text=\"Password:\").pack()\nentry_password = tk.Entry(login_frame, show=\"*\", width=25)\nentry_password.pack()\ntk.Button(login_frame, text=\"Login\", command=login).pack(pady=10)\napp.mainloop()",
+        "detail": "GUI",
+        "documentation": {}
+    },
+    {
+        "label": "entry_email",
+        "kind": 5,
+        "importPath": "GUI",
+        "description": "GUI",
+        "peekOfCode": "entry_email = tk.Entry(login_frame, width=25)\nentry_email.pack()\ntk.Label(login_frame, text=\"Password:\").pack()\nentry_password = tk.Entry(login_frame, show=\"*\", width=25)\nentry_password.pack()\ntk.Button(login_frame, text=\"Login\", command=login).pack(pady=10)\napp.mainloop()",
+        "detail": "GUI",
+        "documentation": {}
+    },
+    {
+        "label": "entry_password",
+        "kind": 5,
+        "importPath": "GUI",
+        "description": "GUI",
+        "peekOfCode": "entry_password = tk.Entry(login_frame, show=\"*\", width=25)\nentry_password.pack()\ntk.Button(login_frame, text=\"Login\", command=login).pack(pady=10)\napp.mainloop()",
+        "detail": "GUI",
         "documentation": {}
     },
     {
@@ -76,7 +228,7 @@
         "kind": 2,
         "importPath": "populatetabletest",
         "description": "populatetabletest",
-        "peekOfCode": "def populate_database(csv_file, server, user, password, database):\n    connection_string = f\"DRIVER={{SQL Server}};SERVER={server};DATABASE={database};UID={user};PWD={password}\"\n    connection = pyodbc.connect(connection_string)\n    cursor = connection.cursor()\n    try:\n        person_data = []\n        preference_data = []\n        language_set = set()\n        hobby_data = []\n        match_data = []",
+        "peekOfCode": "def populate_database(csv_file, server, user, password, database):\n    connection_string = f\"DRIVER={{SQL Server}};SERVER={server};DATABASE={database};UID={user};PWD={password}\"\n    connection = pyodbc.connect(connection_string)\n    cursor = connection.cursor()\n    try:\n        person_data = []\n        preference_data = []\n        hobby_data = []\n        with open(csv_file, mode=\"r\", encoding=\"utf-8-sig\") as file:\n            reader = csv.DictReader(file)",
         "detail": "populatetabletest",
         "documentation": {}
     },
@@ -85,7 +237,7 @@
         "kind": 2,
         "importPath": "populatetabletest",
         "description": "populatetabletest",
-        "peekOfCode": "def textCompare(String1, String2):\n    nlp = spacy.load(\"en_core_web_lg\")\n    doc1 = nlp(String1)\n    doc2 = nlp(String2)\n    return doc1.similarity(doc2)\ndef main():\n    csv_file = \"DatingAppData_Direct.csv\"\n    server = \"golem.csse.rose-hulman.edu\"\n    user = \"bestmatch_esm\"\n    password = \"Findyourbestmatch123\"",
+        "peekOfCode": "def textCompare(String1, String2):\n    nlp = spacy.load(\"en_core_web_lg\")\n    doc1 = nlp(String1)\n    doc2 = nlp(String2)\n    return doc1.similarity(doc2)\ndef main():\n    csv_file = \"data.csv\"\n    server = \"golem.csse.rose-hulman.edu\"\n    user = \"bestmatch_esm\"\n    password = \"Findyourbestmatch123\"",
         "detail": "populatetabletest",
         "documentation": {}
     },
@@ -94,7 +246,7 @@
         "kind": 2,
         "importPath": "populatetabletest",
         "description": "populatetabletest",
-        "peekOfCode": "def main():\n    csv_file = \"DatingAppData_Direct.csv\"\n    server = \"golem.csse.rose-hulman.edu\"\n    user = \"bestmatch_esm\"\n    password = \"Findyourbestmatch123\"\n    database = \"BestMatchDatabase\"\n    populate_database(csv_file, server, user, password, database)\nif __name__ == \"__main__\":\n    main()",
+        "peekOfCode": "def main():\n    csv_file = \"data.csv\"\n    server = \"golem.csse.rose-hulman.edu\"\n    user = \"bestmatch_esm\"\n    password = \"Findyourbestmatch123\"\n    database = \"BestMatchDatabase\"\n    populate_database(csv_file, server, user, password, database)\nif __name__ == \"__main__\":\n    main()",
         "detail": "populatetabletest",
         "documentation": {}
     },
