@@ -3,6 +3,10 @@ from tkinter import messagebox, ttk
 import pyodbc
 from tkcalendar import Calendar, DateEntry
 
+
+current_user_id = None
+current_preference_id = None
+
 def show_login():
     welcome_frame.pack_forget()
     login_frame.pack()
@@ -11,10 +15,64 @@ def show_create_account():
     welcome_frame.pack_forget()
     register_frame.pack()
 
-def show_update_profile():
-    # Here you can define what happens when the "Update My Profile" button is clicked.
-    # You might open another frame or dialog where the user can edit their details.
-    print("Update profile feature not implemented yet.")
+def show_preferences():
+    try:
+        conn = pyodbc.connect(
+            'DRIVER={ODBC Driver 17 for SQL Server};'
+            'SERVER=golem.csse.rose-hulman.edu;'
+            'DATABASE=BestMatchDatabase;'
+            'UID=bestmatch_esm;'
+            'PWD=Findyourbestmatch123'
+        )
+        cursor = conn.cursor()
+        cursor.execute("SELECT GenderPreference, MinAge, MaxAge, MinDistance, MaxDistance, RelationshipType FROM Preference WHERE PreferenceID = ?", (current_preference_id,))  # Make sure to maintain current_user_id somewhere
+        preference = cursor.fetchone()
+        conn.close()
+
+        # Populate fields if preferences exist
+        if preference:
+            gender_pref_entry.set(preference.GenderPreference)
+            min_age_entry.delete(0, tk.END)
+            min_age_entry.insert(0, preference.MinAge)
+            max_age_entry.delete(0, tk.END)
+            max_age_entry.insert(0, preference.MaxAge)
+            min_distance_entry.delete(0, tk.END)
+            min_distance_entry.insert(0, preference.MinDistance)
+            max_distance_entry.delete(0, tk.END)
+            max_distance_entry.insert(0, preference.MaxDistance)
+            relationship_type_entry.set(preference.RelationshipType)
+        
+        profile_frame.pack_forget()
+        preferences_frame.pack()
+    except Exception as e:
+        messagebox.showerror("Database Error", str(e))
+
+
+def update_user_preferences():
+    gender_pref = gender_pref_entry.get()
+    min_age = int(min_age_entry.get())
+    max_age = int(max_age_entry.get())
+    min_distance = int(min_distance_entry.get())
+    max_distance = int(max_distance_entry.get())
+    relationship_type = relationship_type_entry.get()
+    
+    try:
+        conn = pyodbc.connect(
+            'DRIVER={ODBC Driver 17 for SQL Server};'
+            'SERVER=golem.csse.rose-hulman.edu;'
+            'DATABASE=BestMatchDatabase;'
+            'UID=bestmatch_esm;'
+            'PWD=Findyourbestmatch123'
+        )
+        cursor = conn.cursor()
+        cursor.execute("EXEC Update_User_Preferences @PreferenceID = ?, @GenderPreference = ?, @MinAge = ?, @MaxAge = ?, @MinDistance = ?, @MaxDistance = ?, @RelationshipType = ?",
+                       (current_preference_id, gender_pref, min_age, max_age, min_distance, max_distance, relationship_type))
+        conn.commit()
+        messagebox.showinfo("Success", "Preferences updated successfully.")
+        conn.close()
+    except Exception as e:
+        messagebox.showerror("Database Error", str(e))
+
 
 def create_account():
     email = entry_email_register.get()
@@ -26,7 +84,6 @@ def create_account():
     address = entry_address.get()
     phone_number = entry_phone.get()  # Retrieve phone number from input
     partner_value = entry_partner_values.get()
-    # Placeholder for the Photo link, as your UI doesn't include it yet.
     photo_link = ""
 
     try:
@@ -47,6 +104,7 @@ def create_account():
         messagebox.showerror("Database Error", str(e))
 
 def login():
+    global current_user_id, current_preference_id
     email = entry_email.get()
     password = entry_password.get()
     
@@ -59,11 +117,20 @@ def login():
             'PWD=Findyourbestmatch123'
         )
         cursor = conn.cursor()
-        cursor.execute("SELECT FName, LName FROM Person WHERE Email = ? AND Password = ?", (email, password))
+
+        cursor.execute("""
+            SELECT p.UserID, p.FName, p.LName, pr.PreferenceID
+            FROM Person p
+            LEFT JOIN Preferss pr ON p.UserID = pr.UserID
+            WHERE p.Email = ? AND p.Password = ?
+        """, (email, password))
+
         user = cursor.fetchone()
         if user:
             messagebox.showinfo("Login Success", "You have successfully logged in.")
-            user_fullname_label.config(text=f"{user.FName} {user.LName}")  # Update label to show user's full name
+            current_user_id = user.UserID
+            current_preference_id = user.PreferenceID  
+            user_fullname_label.config(text=f"{user.FName} {user.LName}")  
             login_frame.pack_forget()
             profile_frame.pack()
         else:
@@ -150,11 +217,45 @@ tk.Button(register_frame, text="Create My Account", command=create_account).pack
 # Profile Frame
 profile_frame = tk.Frame(app)
 
-user_fullname_label = tk.Label(profile_frame, text="", font=("Helvetica", 16))  # This label will display the user's full name.
+user_fullname_label = tk.Label(profile_frame, text="", font=("Helvetica", 16))  
 user_fullname_label.pack(pady=20)
 
-update_profile_btn = tk.Button(profile_frame, text="Update My Profile", command=show_update_profile)  # Assuming you will define show_update_profile.
+update_profile_btn = tk.Button(profile_frame, text="Update My Profile", command=show_preferences)
 update_profile_btn.pack(pady=10)
+
+# Preferences Frame
+preferences_frame = tk.Frame(app)
+
+# Input fields for preferences
+tk.Label(preferences_frame, text="Gender Preference:").pack()
+gender_pref_entry = ttk.Combobox(preferences_frame, values=["Male", "Female", "Non-Binary", "No Preference"])
+gender_pref_entry.pack()
+
+tk.Label(preferences_frame, text="Minimum Age:").pack()
+min_age_entry = tk.Entry(preferences_frame)
+min_age_entry.pack()
+
+tk.Label(preferences_frame, text="Maximum Age:").pack()
+max_age_entry = tk.Entry(preferences_frame)
+max_age_entry.pack()
+
+tk.Label(preferences_frame, text="Minimum Distance (km):").pack()
+min_distance_entry = tk.Entry(preferences_frame)
+min_distance_entry.pack()
+
+tk.Label(preferences_frame, text="Maximum Distance (km):").pack()
+max_distance_entry = tk.Entry(preferences_frame)
+max_distance_entry.pack()
+
+tk.Label(preferences_frame, text="Relationship Type:").pack()
+relationship_type_entry = ttk.Combobox(preferences_frame, values=["Short-Term", "Long-Term", "Marriage", "Friendship"])
+relationship_type_entry.pack()
+
+update_preferences_btn = tk.Button(preferences_frame, text="Update Preferences", command=update_user_preferences)
+update_preferences_btn.pack(pady=10)
+
+update_profile_btn.config(command=show_preferences)
+
 
 
 app.mainloop()
