@@ -11,6 +11,11 @@ def show_create_account():
     welcome_frame.pack_forget()
     register_frame.pack()
 
+def show_update_profile():
+    # Here you can define what happens when the "Update My Profile" button is clicked.
+    # You might open another frame or dialog where the user can edit their details.
+    print("Update profile feature not implemented yet.")
+
 def create_account():
     email = entry_email_register.get()
     password = entry_password_register.get()
@@ -54,14 +59,19 @@ def login():
             'PWD=Findyourbestmatch123'
         )
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM Person WHERE Email = ? AND Password = ?", (email, password))
-        if cursor.fetchone():
+        cursor.execute("SELECT FName, LName FROM Person WHERE Email = ? AND Password = ?", (email, password))
+        user = cursor.fetchone()
+        if user:
             messagebox.showinfo("Login Success", "You have successfully logged in.")
+            user_fullname_label.config(text=f"{user.FName} {user.LName}")  # Update label to show user's full name
+            login_frame.pack_forget()
+            profile_frame.pack()
         else:
             messagebox.showerror("Login Failed", "Incorrect username or password")
         conn.close()
     except Exception as e:
         messagebox.showerror("Database Error", str(e))
+
 
 app = tk.Tk()
 app.geometry('500x400')
@@ -136,5 +146,15 @@ entry_partner_values = tk.Entry(register_frame, width=25)
 entry_partner_values.pack()
 
 tk.Button(register_frame, text="Create My Account", command=create_account).pack(pady=10)
+
+# Profile Frame
+profile_frame = tk.Frame(app)
+
+user_fullname_label = tk.Label(profile_frame, text="", font=("Helvetica", 16))  # This label will display the user's full name.
+user_fullname_label.pack(pady=20)
+
+update_profile_btn = tk.Button(profile_frame, text="Update My Profile", command=show_update_profile)  # Assuming you will define show_update_profile.
+update_profile_btn.pack(pady=10)
+
 
 app.mainloop()
