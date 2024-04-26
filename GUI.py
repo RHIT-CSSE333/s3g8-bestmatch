@@ -116,7 +116,7 @@ entry_lname = tk.Entry(register_frame, width=25)
 entry_lname.pack()
 
 tk.Label(register_frame, text="Date of Birth:").pack()
-cal = DateEntry(register_frame, width=25, year=2000, month=1, day=1, background='darkblue', foreground='white', borderwidth=2)
+cal = DateEntry(register_frame, width=25, year=2000, month=1, day=1, background='darkblue', foreground='white', borderwidth=2, date_pattern='dd/mm/yyyy')
 cal.pack()
 
 tk.Label(register_frame, text="Gender:").pack()
