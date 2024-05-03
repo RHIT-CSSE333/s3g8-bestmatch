@@ -100,8 +100,20 @@ def create_account():
         conn.commit()
         messagebox.showinfo("Account Created", "Your account has been created successfully.")
         conn.close()
+    except pyodbc.DatabaseError as e:
+        error_message = str(e)
+        if "Missing required fields" in error_message:
+            messagebox.showerror("Missing Fields", "Please fill in all required fields.")
+        elif "User must be at least 18 years old" in error_message:
+            messagebox.showerror("Age Requirement", "User must be at least 18 years old.")
+        elif "Invalid email format" in error_message:
+            messagebox.showerror("Invalid Email", "Please enter a valid email address.")
+        elif "Failed to insert new user" in error_message:
+            messagebox.showerror("Database Error", "Failed to create account. Please try again later.")
+        else:
+            messagebox.showerror("Database Error", error_message)
     except Exception as e:
-        messagebox.showerror("Database Error", str(e))
+        messagebox.showerror("Error", str(e))
 
 def login():
     global current_user_id, current_preference_id
@@ -119,9 +131,8 @@ def login():
         cursor = conn.cursor()
 
         cursor.execute("""
-            SELECT p.UserID, p.FName, p.LName, pr.PreferenceID
+            SELECT p.UserID, p.FName, p.LName, p.PreferenceID
             FROM Person p
-            LEFT JOIN Preferss pr ON p.UserID = pr.UserID
             WHERE p.Email = ? AND p.Password = ?
         """, (email, password))
 
