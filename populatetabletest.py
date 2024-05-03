@@ -4,24 +4,16 @@ import pyodbc
 def populate_table(cursor, table_name, data, columns, return_ids=False):
     placeholders = ', '.join(['?'] * len(columns))
     columns = ', '.join(columns)
-    result_ids = []
-
-    # Form the basic INSERT statement
     sql = f"INSERT INTO {table_name} ({columns}) VALUES ({placeholders})"
+    cursor.executemany(sql, data)
+    if return_ids:
+        return cursor.execute("SELECT @@IDENTITY").fetchone()[0]  # Fetch last inserted ID
 
-    for row_data in data:
-        # If return_ids is True, fetch the identity of the last inserted row
-        if return_ids:
-            # Execute INSERT and immediately fetch the identity
-            cursor.execute(f"{sql}; SELECT SCOPE_IDENTITY();", row_data)
-            result_id = cursor.fetchone()  # Fetch the result of SELECT SCOPE_IDENTITY()
-            if result_id and result_id[0] is not None:
-                result_ids.append(result_id[0])
-        else:
-            cursor.execute(sql, row_data)
-    
-    return result_ids  # Return list of fetched identity values if any
-
+def fetch_user_ids(cursor, emails):
+    placeholders = ', '.join('?' for _ in emails)
+    query = "SELECT UserID, Email FROM Person WHERE Email IN ({})".format(placeholders)
+    cursor.execute(query, emails)
+    return cursor.fetchall()
 
 def populate_database(csv_file, server, user, password, database):
     connection_string = f'DRIVER={{SQL Server}};SERVER={server};DATABASE={database};UID={user};PWD={password}'
@@ -29,24 +21,43 @@ def populate_database(csv_file, server, user, password, database):
     cursor = connection.cursor()
 
     try:
+        person_data = []
+        preference_data = []
+        emails = []
+        language_data = []
+        hobby_data = []
+
         with open(csv_file, mode='r', encoding='utf-8-sig') as file:
             reader = csv.DictReader(file)
             for row in reader:
-                # Insert person and get UserID
-                person_id = populate_table(cursor, 'Person', [[row['Fname'], row['Lname'], row['DOB'], row['Photolink'], row['Gender'], row['Password'], row['Email'], row['PhoneNumber'], row['Address'], row['PartnerValues']]], ['Fname', 'LName', 'DOB', 'Photolink', 'Gender', 'Password', 'Email', 'PhoneNumber', 'Address', 'PartnerValues'], return_ids=True)
+                person_data.append([row['Fname'], row['Lname'], row['DOB'], row['Photolink'], row['Gender'], row['Password'], row['Email'], row['PhoneNumber'], row['Address'], row['PartnerValues']])
+                emails.append(row['Email'])  # Collect emails to fetch UserIDs later
 
-                # Prepare and insert preference with UserID
-                preference_id = populate_table(cursor, 'Preference', [[person_id, row['GenderPreference'], row['MaxDistance'], row['MinAge'], row['MaxAge'], row['RelationshipType']]], ['UserID', 'GenderPreference', 'MaxDistance', 'MinAge', 'MaxAge', 'RelationshipType'], return_ids=True)
+        populate_table(cursor, 'Person', person_data, ['Fname', 'LName', 'DOB', 'Photolink', 'Gender', 'Password', 'Email', 'PhoneNumber', 'Address', 'PartnerValues'])
+        connection.commit()
 
-                # Insert languages and hobbies for each user and preference
-                languages = [row.get(f'LanguageName{i}') for i in range(1, 4) if row.get(f'LanguageName{i}')]
-                for lang in languages:
-                    populate_table(cursor, 'Language', [[lang, person_id, preference_id]], ['Name', 'UserID', 'PreferenceID'])
+        # Fetch UserIDs
+        user_ids = fetch_user_ids(cursor, emails)
+        email_to_userid = {email: user_id for user_id, email in user_ids}
 
-                # Collect and insert hobbies
-                hobbies = [(row.get(f'HobbyName{i}'), row.get(f'HobbyDescription{i}')) for i in range(1, 4) if row.get(f'HobbyName{i}') and row.get(f'HobbyDescription{i}')]
-                for hobby_name, hobby_desc in hobbies:
-                    populate_table(cursor, 'Hobby', [[hobby_name, hobby_desc, person_id, preference_id]], ['Name', 'Description', 'UserID', 'PreferenceID'])
+        with open(csv_file, mode='r', encoding='utf-8-sig') as file:
+            reader = csv.DictReader(file)
+            for row in reader:
+                if row['Email'] in email_to_userid:
+                    user_id = email_to_userid[row['Email']]
+                    preference_id = populate_table(cursor, 'Preference', [[user_id, row['GenderPreference'], row['MaxDistance'], row['MinAge'], row['MaxAge'], row['RelationshipType']]], ['UserID', 'GenderPreference', 'MaxDistance', 'MinAge', 'MaxAge', 'RelationshipType'], return_ids=True)
+                    # Collect language and hobby data
+                    languages = [row.get(f'LanguageName{i}') for i in range(1, 4) if row.get(f'LanguageName{i}')]
+                    for lang in languages:
+                        language_data.append([lang, user_id, preference_id])
+                    hobbies = [(row.get(f'HobbyName{i}'), row.get(f'HobbyDescription{i}')) for i in range(1, 4) if row.get(f'HobbyName{i}') and row.get(f'HobbyDescription{i}')]
+                    for hobby_name, hobby_desc in hobbies:
+                        hobby_data.append([hobby_name, hobby_desc, user_id, preference_id])
+
+        if language_data:
+            populate_table(cursor, 'Language', language_data, ['Name', 'UserID', 'PreferenceID'])
+        if hobby_data:
+            populate_table(cursor, 'Hobby', hobby_data, ['Name', 'Description', 'UserID', 'PreferenceID'])
 
         connection.commit()
         print("Data inserted successfully.")
