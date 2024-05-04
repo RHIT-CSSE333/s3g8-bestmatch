@@ -2,10 +2,22 @@ import tkinter as tk
 from tkinter import messagebox, ttk
 import pyodbc
 from tkcalendar import Calendar, DateEntry
-
+import matchingalgo
+import threading
 
 current_user_id = None
 current_preference_id = None
+
+
+def connect_db():
+    """Establish a connection to the database."""
+    return pyodbc.connect(
+        'DRIVER={ODBC Driver 17 for SQL Server};'
+        'SERVER=golem.csse.rose-hulman.edu;'
+        'DATABASE=BestMatchDatabase;'
+        'UID=bestmatch_esm;'
+        'PWD=Findyourbestmatch123'
+    )
 
 def show_login():
     welcome_frame.pack_forget()
@@ -25,22 +37,29 @@ def show_preferences():
             'PWD=Findyourbestmatch123'
         )
         cursor = conn.cursor()
-        cursor.execute("SELECT GenderPreference, MinAge, MaxAge, MinDistance, MaxDistance, RelationshipType FROM Preference WHERE PreferenceID = ?", (current_preference_id,))  # Make sure to maintain current_user_id somewhere
+        cursor.execute("SELECT GenderPreference, MinAge, MaxAge, MaxDistance, RelationshipType FROM Preference WHERE PreferenceID = ?", (current_preference_id,))  # Make sure to maintain current_user_id somewhere
         preference = cursor.fetchone()
         conn.close()
 
-        # Populate fields if preferences exist
         if preference:
             gender_pref_entry.set(preference.GenderPreference)
-            min_age_entry.delete(0, tk.END)
-            min_age_entry.insert(0, preference.MinAge)
-            max_age_entry.delete(0, tk.END)
-            max_age_entry.insert(0, preference.MaxAge)
-            min_distance_entry.delete(0, tk.END)
-            min_distance_entry.insert(0, preference.MinDistance)
+            min_age_slider.set(preference.MinAge)  # Update slider value
+            max_age_slider.set(preference.MaxAge)  # Update slider value
             max_distance_entry.delete(0, tk.END)
             max_distance_entry.insert(0, preference.MaxDistance)
             relationship_type_entry.set(preference.RelationshipType)
+
+
+        # # Populate fields if preferences exist
+        # if preference:
+        #     gender_pref_entry.set(preference.GenderPreference)
+        #     min_age_entry.delete(0, tk.END)
+        #     min_age_entry.insert(0, preference.MinAge)
+        #     max_age_entry.delete(0, tk.END)
+        #     max_age_entry.insert(0, preference.MaxAge)
+        #     max_distance_entry.delete(0, tk.END)
+        #     max_distance_entry.insert(0, preference.MaxDistance)
+        #     relationship_type_entry.set(preference.RelationshipType)
         
         profile_frame.pack_forget()
         preferences_frame.pack()
@@ -50,9 +69,10 @@ def show_preferences():
 
 def update_user_preferences():
     gender_pref = gender_pref_entry.get()
-    min_age = int(min_age_entry.get())
-    max_age = int(max_age_entry.get())
-    min_distance = int(min_distance_entry.get())
+    min_age = min_age_slider.get()     
+    max_age = max_age_slider.get()
+    # min_age = int(min_age_entry.get())
+    # max_age = int(max_age_entry.get())
     max_distance = int(max_distance_entry.get())
     relationship_type = relationship_type_entry.get()
     
@@ -65,8 +85,8 @@ def update_user_preferences():
             'PWD=Findyourbestmatch123'
         )
         cursor = conn.cursor()
-        cursor.execute("EXEC Update_User_Preferences @PreferenceID = ?, @GenderPreference = ?, @MinAge = ?, @MaxAge = ?, @MinDistance = ?, @MaxDistance = ?, @RelationshipType = ?",
-                       (current_preference_id, gender_pref, min_age, max_age, min_distance, max_distance, relationship_type))
+        cursor.execute("EXEC Update_User_Preferences @PreferenceID = ?, @GenderPreference = ?, @MinAge = ?, @MaxAge = ?, @MaxDistance = ?, @RelationshipType = ?",
+                       (current_preference_id, gender_pref, min_age, max_age, max_distance, relationship_type))
         conn.commit()
         messagebox.showinfo("Success", "Preferences updated successfully.")
         conn.close()
@@ -79,10 +99,10 @@ def create_account():
     password = entry_password_register.get()
     first_name = entry_fname.get()
     last_name = entry_lname.get()
-    dob = cal.get_date().strftime('%Y-%m-%d')  # Format date as yyyy-mm-dd
+    dob = cal.get_date().strftime('%Y-%m-%d')  
     gender = gender_combobox.get()
     address = entry_address.get()
-    phone_number = entry_phone.get()  # Retrieve phone number from input
+    phone_number = entry_phone.get()  
     partner_value = entry_partner_values.get()
     photo_link = ""
 
@@ -119,7 +139,6 @@ def login():
     global current_user_id, current_preference_id
     email = entry_email.get()
     password = entry_password.get()
-    
     try:
         conn = pyodbc.connect(
             'DRIVER={ODBC Driver 17 for SQL Server};'
@@ -131,10 +150,12 @@ def login():
         cursor = conn.cursor()
 
         cursor.execute("""
-            SELECT p.UserID, p.FName, p.LName, p.PreferenceID
+            SELECT p.UserID, p.FName, p.LName, pr.PreferenceID
             FROM Person p
+            JOIN Preference pr ON p.UserID = pr.UserID
             WHERE p.Email = ? AND p.Password = ?
         """, (email, password))
+
 
         user = cursor.fetchone()
         if user:
@@ -150,6 +171,63 @@ def login():
     except Exception as e:
         messagebox.showerror("Database Error", str(e))
 
+def show_matches():
+    potential_user_ids = fetch_all_users_ids()  
+    for user_id in potential_user_ids:
+        if user_id != current_user_id:
+            print (user_id)  
+            matchingalgo.matching_algo(current_user_id, user_id)
+    try:
+        conn = pyodbc.connect(
+            'DRIVER={ODBC Driver 17 for SQL Server};'
+            'SERVER=golem.csse.rose-hulman.edu;'
+            'DATABASE=BestMatchDatabase;'
+            'UID=bestmatch_esm;'
+            'PWD=Findyourbestmatch123'
+        )
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            SELECT h.MatchID, m.Percentage, p.UserID, p.FName, p.LName
+            FROM Has h
+            JOIN Match m ON h.MatchID = m.MatchID
+            JOIN Person p ON h.UserID2 = p.UserID
+            WHERE h.UserID1 = ?  -- Exclude matches with the current user
+            AND h.Accepted = 0
+        """, (current_user_id,))
+
+        matches = cursor.fetchall()
+        print (matches)
+        conn.close()
+
+        for widget in matches_frame.winfo_children():
+            widget.destroy()
+
+        for match in matches:
+            tk.Label(matches_frame, text=f"Match with {match[3]} {match[4]}: {match[1]:.2f}%").pack()
+
+        show_matches_page()
+
+    except Exception as e:
+        messagebox.showerror("Database Error", str(e))
+
+def fetch_all_users_ids():
+    """ Fetch all user IDs from the database. """
+    try:
+        with connect_db() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT UserID FROM Person")
+            return [row[0] for row in cursor.fetchall()]
+    except Exception as e:
+        messagebox.showerror("Database Error", f"Failed to fetch user IDs: {e}")
+        return []
+
+
+
+def show_matches_page():
+    profile_frame.pack_forget()
+    
+    matches_frame.pack()
 
 app = tk.Tk()
 app.geometry('500x400')
@@ -208,7 +286,7 @@ cal = DateEntry(register_frame, width=25, year=2000, month=1, day=1, background=
 cal.pack()
 
 tk.Label(register_frame, text="Gender:").pack()
-gender_combobox = ttk.Combobox(register_frame, values=["Male", "Female", "Non-Binary"])
+gender_combobox = ttk.Combobox(register_frame, values=["Male", "Female", "All"])
 gender_combobox.pack()
 
 tk.Label(register_frame, text="Address:").pack()
@@ -234,25 +312,27 @@ user_fullname_label.pack(pady=20)
 update_profile_btn = tk.Button(profile_frame, text="Update My Profile", command=show_preferences)
 update_profile_btn.pack(pady=10)
 
+matches_frame = tk.Frame(app)
+show_matches_btn = tk.Button(profile_frame, text="Show My Matches", command=show_matches)
+show_matches_btn.pack(pady=10)
+
 # Preferences Frame
 preferences_frame = tk.Frame(app)
 
 # Input fields for preferences
 tk.Label(preferences_frame, text="Gender Preference:").pack()
-gender_pref_entry = ttk.Combobox(preferences_frame, values=["Male", "Female", "Non-Binary", "No Preference"])
+gender_pref_entry = ttk.Combobox(preferences_frame, values=["Male", "Female", "All"])
 gender_pref_entry.pack()
 
 tk.Label(preferences_frame, text="Minimum Age:").pack()
-min_age_entry = tk.Entry(preferences_frame)
-min_age_entry.pack()
+min_age_slider = tk.Scale(preferences_frame, from_=18, to=100, orient='horizontal', length=200)
+min_age_slider.set(18)  # Default value
+min_age_slider.pack()
 
 tk.Label(preferences_frame, text="Maximum Age:").pack()
-max_age_entry = tk.Entry(preferences_frame)
-max_age_entry.pack()
-
-tk.Label(preferences_frame, text="Minimum Distance (km):").pack()
-min_distance_entry = tk.Entry(preferences_frame)
-min_distance_entry.pack()
+max_age_slider = tk.Scale(preferences_frame, from_=18, to=100, orient='horizontal', length=200)
+max_age_slider.set(55)  # Default value
+max_age_slider.pack()
 
 tk.Label(preferences_frame, text="Maximum Distance (km):").pack()
 max_distance_entry = tk.Entry(preferences_frame)
