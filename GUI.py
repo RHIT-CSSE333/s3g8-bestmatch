@@ -4,7 +4,9 @@ import pyodbc
 from tkcalendar import Calendar, DateEntry
 import matchingalgo
 import threading
- 
+# from passlib.hash import bcrypt 
+import passlib.hash 
+
 current_user_id = None
 current_preference_id = None
  
@@ -115,8 +117,13 @@ def create_account():
             'PWD=Findyourbestmatch123'
         )
         cursor = conn.cursor()
+        # salt = bcrypt.gen_salt(rounds=12)
+        # hashed_password = bcrypt.hash(password, salt)
+        hasher = passlib.hash.bcrypt.using(rounds=12)
+        hashed_password = hasher.hash(password)
+
         cursor.execute("EXEC Insert_User @Fname = ?, @LName = ?, @DOB = ?, @Photo = ?, @Gender = ?, @Password = ?, @Email = ?, @PhoneNumber = ?, @Address = ?, @PartnerValues = ?",
-                       (first_name, last_name, dob, photo_link, gender, password, email, phone_number, address, partner_value))
+                       (first_name, last_name, dob, photo_link, gender, hashed_password, email, phone_number, address, partner_value))
         conn.commit()
         messagebox.showinfo("Account Created", "Your account has been created successfully.")
         conn.close()
