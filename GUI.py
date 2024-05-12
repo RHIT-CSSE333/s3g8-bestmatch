@@ -229,7 +229,29 @@ def fetch_all_users_ids():
         messagebox.showerror("Database Error", f"Failed to fetch user IDs: {e}")
         return []
  
- 
+def delete_account():
+    global current_user_id, current_preference_id
+    response = messagebox.askyesno("Confirm", "Are you sure you want to delete your account?")
+    if response:
+        try:
+            conn = connect_db()
+            cursor = conn.cursor()
+            cursor.execute("EXEC DeleteUser @UserID = ?", (current_user_id,))
+            conn.commit()
+
+            messagebox.showinfo("Account Deleted", "Your account has been successfully deleted.")
+
+            current_user_id = None
+            current_preference_id = None
+
+            preferences_frame.pack_forget()
+            welcome_frame.pack()
+
+        except Exception as e:
+            conn.rollback() 
+            messagebox.showerror("Database Error", str(e))
+        finally:
+            conn.close()
  
 def show_matches_page():
     profile_frame.pack_forget()
@@ -353,7 +375,10 @@ update_preferences_btn = tk.Button(preferences_frame, text="Update Preferences",
 update_preferences_btn.pack(pady=10)
  
 update_profile_btn.config(command=show_preferences)
- 
+
+delete_account_btn = tk.Button(preferences_frame, text="Delete My Account", command=delete_account, bg='red', fg='white')
+delete_account_btn.pack(pady=10)
+
  
  
 app.mainloop()
