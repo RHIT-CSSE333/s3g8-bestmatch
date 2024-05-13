@@ -1,5 +1,6 @@
 import csv
 import pyodbc
+from passlib.hash import bcrypt
 
 def populate_table(cursor, table_name, data, columns, return_ids=False):
     placeholders = ', '.join(['?'] * len(columns))
@@ -14,6 +15,12 @@ def fetch_user_ids(cursor, emails):
     query = "SELECT UserID, Email FROM Person WHERE Email IN ({})".format(placeholders)
     cursor.execute(query, emails)
     return cursor.fetchall()
+
+def hash_passwords(person_data):
+    """ Hash passwords using bcrypt """
+    for person in person_data:
+        password_index = 5  
+        person[password_index] = bcrypt.hash(person[password_index])
 
 def populate_database(csv_file, server, user, password, database):
     connection_string = f'DRIVER={{SQL Server}};SERVER={server};DATABASE={database};UID={user};PWD={password}'
@@ -32,7 +39,7 @@ def populate_database(csv_file, server, user, password, database):
             for row in reader:
                 person_data.append([row['Fname'], row['Lname'], row['DOB'], row['Photolink'], row['Gender'], row['Password'], row['Email'], row['PhoneNumber'], row['Address'], row['PartnerValues']])
                 emails.append(row['Email'])  # Collect emails to fetch UserIDs later
-
+        hash_passwords(person_data)
         populate_table(cursor, 'Person', person_data, ['Fname', 'LName', 'DOB', 'Photolink', 'Gender', 'Password', 'Email', 'PhoneNumber', 'Address', 'PartnerValues'])
         connection.commit()
 
