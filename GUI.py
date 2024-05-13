@@ -157,23 +157,38 @@ def login():
         cursor = conn.cursor()
  
         cursor.execute("""
-            SELECT p.UserID, p.FName, p.LName, pr.PreferenceID
-            FROM Person p
-            JOIN Preference pr ON p.UserID = pr.UserID
-            WHERE p.Email = ? AND p.Password = ?
-        """, (email, password))
+            SELECT UserID, FName, LName, Password
+            FROM Person
+            WHERE Email = ?
+        """, (email,))
  
  
         user = cursor.fetchone()
+        # if user:
+        #     messagebox.showinfo("Login Success", "You have successfully logged in.")
+        #     current_user_id = user.UserID
+        #     current_preference_id = user.PreferenceID  
+        #     user_fullname_label.config(text=f"{user.FName} {user.LName}")  
+        #     login_frame.pack_forget()
+        #     profile_frame.pack()
         if user:
-            messagebox.showinfo("Login Success", "You have successfully logged in.")
-            current_user_id = user.UserID
-            current_preference_id = user.PreferenceID  
-            user_fullname_label.config(text=f"{user.FName} {user.LName}")  
-            login_frame.pack_forget()
-            profile_frame.pack()
+            stored_password = user[3]
+            # Check if the stored password is a valid string
+            if stored_password and isinstance(stored_password, str):
+                print("Stored Password:", stored_password)
+                hasher = passlib.hash.bcrypt
+                if hasher.verify(password, stored_password):
+                    messagebox.showinfo("Login Success", "You have successfully logged in.")
+                    current_user_id = user[0]
+                    user_fullname_label.config(text=f"{user[1]} {user[2]}")
+                    login_frame.pack_forget()
+                    profile_frame.pack()
+                else:
+                    messagebox.showerror("Login Failed", "Incorrect username or password")
+            else:
+                messagebox.showerror("Login Failed", "Invalid password stored in the system.")
         else:
-            messagebox.showerror("Login Failed", "Incorrect username or password")
+            messagebox.showerror("Login Failed", "User not found")
         conn.close()
     except Exception as e:
         messagebox.showerror("Database Error", str(e))
