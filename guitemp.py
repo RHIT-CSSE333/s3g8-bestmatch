@@ -171,11 +171,53 @@ def login():
     except Exception as e:
         messagebox.showerror("Database Error", str(e))
 
+def update_match_status(match_id, status, match_frame):
+    try:
+        with connect_db() as conn:
+            cursor = conn.cursor()
+            if status:
+                # Update only if the logged-in user is UserID1 and set Accepted to 1
+                cursor.execute("""
+                    UPDATE Has 
+                    SET Accepted = 1 
+                    WHERE MatchID = ? AND UserID1 = ?
+                """, (match_id, current_user_id))
+                conn.commit()
+                
+                # Check if both users have accepted the match
+                cursor.execute("""
+                    SELECT COUNT(*) FROM Has
+                    WHERE MatchID = ? AND Accepted = 1
+                """, (match_id,))
+                count = cursor.fetchone()[0]
+                
+                if count == 2:  # Assuming there are only two users per match
+                    messagebox.showinfo("Success", "Congrats, you have found your match!")
+                    match_frame.destroy()  # Optionally destroy the match frame
+
+            else:
+                # Decline match: remove entries from Match and Has tables
+                cursor.execute("""
+                    DELETE FROM Has 
+                    WHERE MatchID = ?
+                """, (match_id,))
+                cursor.execute("""
+                    DELETE FROM Match 
+                    WHERE MatchID = ?
+                """, (match_id,))
+                conn.commit()
+
+            messagebox.showinfo("Success", "Match updated successfully.")
+            match_frame.destroy()  # Destroy the frame containing the match info
+
+    except Exception as e:
+        messagebox.showerror("Database Error", f"Failed to update match status: {e}")
+
 def show_matches():
     potential_user_ids = fetch_all_users_ids()  
     for user_id in potential_user_ids:
         if user_id != current_user_id:
-            print (user_id)  
+            print(user_id)  
             matchingalgo.matching_algo(current_user_id, user_id)
     try:
         conn = pyodbc.connect(
@@ -186,25 +228,34 @@ def show_matches():
             'PWD=Findyourbestmatch123'
         )
         cursor = conn.cursor()
-
         cursor.execute("""
             SELECT h.MatchID, m.Percentage, p.UserID, p.FName, p.LName
             FROM Has h
             JOIN Match m ON h.MatchID = m.MatchID
             JOIN Person p ON h.UserID2 = p.UserID
-            WHERE h.UserID1 = ?  -- Exclude matches with the current user
-            AND h.Accepted = 0
+            WHERE h.UserID1 = ? AND h.Accepted = 0
         """, (current_user_id,))
-
         matches = cursor.fetchall()
-        print (matches)
         conn.close()
 
         for widget in matches_frame.winfo_children():
             widget.destroy()
 
-        for match in matches:
-            tk.Label(matches_frame, text=f"Match with {match[3]} {match[4]}: {match[1]:.2f}%").pack()
+        if not matches:
+            no_match_label = tk.Label(matches_frame, text="No match found.")
+            no_match_label.pack()
+        else:
+            for match in matches:
+                match_frame = tk.Frame(matches_frame)
+                match_frame.pack(pady=5, fill=tk.X)
+
+                tk.Label(match_frame, text=f"Match with {match[3]} {match[4]}: {match[1]:.2f}%").pack(side=tk.LEFT)
+
+                accept_button = tk.Button(match_frame, text="Accept", command=lambda m=match, mf=match_frame: update_match_status(m[0], True, mf))
+                accept_button.pack(side=tk.RIGHT, padx=10)
+
+                decline_button = tk.Button(match_frame, text="Decline", command=lambda m=match, mf=match_frame: update_match_status(m[0], False, mf))
+                decline_button.pack(side=tk.RIGHT)
 
         show_matches_page()
 
@@ -222,11 +273,8 @@ def fetch_all_users_ids():
         messagebox.showerror("Database Error", f"Failed to fetch user IDs: {e}")
         return []
 
-
-
 def show_matches_page():
     profile_frame.pack_forget()
-    
     matches_frame.pack()
 
 app = tk.Tk()

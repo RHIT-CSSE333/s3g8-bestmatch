@@ -1,5 +1,10 @@
 import pyodbc
 import spacy
+import requests
+import json
+import openrouteservice
+from openrouteservice import convert
+from openrouteservice.directions import directions
 
 nlp = spacy.load('en_core_web_md')
 
@@ -18,7 +23,7 @@ def fetch_user_preferences(user_id):
     with connect_db() as conn:
         cursor = conn.cursor()
         cursor.execute("""
-            SELECT p.Gender, p.Age, pr.GenderPreference, pr.MinAge, pr.MaxAge, pr.MaxDistance
+            SELECT p.Gender, p.Age, pr.GenderPreference, pr.MinAge, pr.MaxAge, pr.MaxDistance, p.Address
             FROM Person p
             JOIN Preference pr ON p.UserID = pr.UserID
             WHERE p.UserID = ?
@@ -46,9 +51,27 @@ def fetch_user_details(user_id):
 
         return hobbies, ' '.join(languages), partner_values, relationship_type
 
-def calculate_distance(user1_address, user2_address):
-    """Mock function to calculate geographical distance between two users."""
-    return 10  
+def geocode_address(address):
+    client = openrouteservice.Client(key='5b3ce3597851110001cf6248ac83a78909174858bc8a5c73691876f1')  # Replace 'YOUR_API_KEY' with your actual API key
+    try:
+        geocode = client.pelias_search(text=address, country='US')
+        location = geocode['features'][0]['geometry']['coordinates']
+        return location
+    except Exception as e:
+        print(f"Error geocoding address {address}: {str(e)}")
+        return None
+
+def calculate_distance(address1, address2):
+    coordinates1 = geocode_address(address1)
+    coordinates2 = geocode_address(address2)
+
+    if coordinates1 and coordinates2:
+        client = openrouteservice.Client(key='5b3ce3597851110001cf6248ac83a78909174858bc8a5c73691876f1')  # Ensure you replace 'YOUR_API_KEY'
+        routes = client.directions((coordinates1, coordinates2))
+        distance = routes['routes'][0]['summary']['distance'] / 1000  # Convert meters to kilometers
+        return distance
+    else:
+        return None
 
 def calculate_similarity(text1, text2):
     """Calculate textual similarity using NLP."""
@@ -61,11 +84,11 @@ def preliminary_algo(user1_id, user2_id):
     user1_data = fetch_user_preferences(user1_id)
     user2_data = fetch_user_preferences(user2_id)
     if user1_data and user2_data:
-        user1_gender, user1_age, user1_gender_pref, user1_min_age, user1_max_age, user1_max_dist = user1_data
-        user2_gender, user2_age, user2_gender_pref, user2_min_age, user2_max_age, user2_max_dist = user2_data
+        user1_gender, user1_age, user1_gender_pref, user1_min_age, user1_max_age, user1_max_dist, user1_address = user1_data
+        user2_gender, user2_age, user2_gender_pref, user2_min_age, user2_max_age, user2_max_dist, user2_address = user2_data
         if user1_gender in user2_gender_pref and user2_gender in user1_gender_pref and \
            user1_min_age <= user2_age <= user1_max_age and user2_min_age <= user1_age <= user2_max_age and \
-           calculate_distance(user1_data, user2_data) <= min(user1_max_dist, user2_max_dist):
+           calculate_distance(user1_address, user2_address) <= min(user1_max_dist, user2_max_dist):
             return True
     return False
 
