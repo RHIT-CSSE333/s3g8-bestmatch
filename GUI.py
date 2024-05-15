@@ -4,13 +4,45 @@ import pyodbc
 from tkcalendar import Calendar, DateEntry
 import matchingalgo
 import threading
-# from passlib.hash import bcrypt
+
 import passlib.hash
- 
+import cloudinary
+import cloudinary.uploader
+import cloudinary.api
+
+from tkinter import filedialog
+
+from PIL import Image, ImageTk
+import requests
+from io import BytesIO
+
+
+
 current_user_id = None
 current_preference_id = None
+photo_label = None
  
+cloudinary.config( 
+  cloud_name = "dish9tzjr", 
+  api_key = "922323626444279", 
+  api_secret = "5_ePcnUjoH66Txx5GlfBc5DIOOo",
+  secure=True
+)
+
+def select_image():
+    file_path = filedialog.askopenfilename(filetypes=[("Image Files", "*.png;*.jpg;*.jpeg")])
+    if file_path:
+        try:
+            photo_url = upload_image_to_cloudinary(file_path)
+            return photo_url
+        except Exception as e:
+            messagebox.showerror("Upload Error", "Failed to upload image: " + str(e))
+    return ""
  
+def upload_image_to_cloudinary(file_path):
+    response = cloudinary.uploader.upload(file_path)
+    return response['url']
+
 def connect_db():
     """Establish a connection to the database."""
     return pyodbc.connect(
@@ -29,6 +61,22 @@ def show_create_account():
     welcome_frame.pack_forget()
     register_frame.pack()
  
+def upload_and_update_photo():
+    photo_url = select_image()
+    if photo_url:
+        try:
+            conn = connect_db()
+            cursor = conn.cursor()
+            cursor.execute("UPDATE Person SET Photolink = ? WHERE UserID = ?", (photo_url, current_user_id))
+            conn.commit()
+            conn.close()
+            messagebox.showinfo("Update Successful", "Your profile picture has been updated.")
+            load_user_photo(photo_url) 
+        except Exception as e:
+            messagebox.showerror("Database Error", str(e))
+    else:
+        messagebox.showerror("Upload Failed", "No image was selected or upload failed.")
+
 def show_preferences():
     try:
         conn = pyodbc.connect(
@@ -41,40 +89,34 @@ def show_preferences():
         cursor = conn.cursor()
         cursor.execute("SELECT GenderPreference, MinAge, MaxAge, MaxDistance, RelationshipType FROM Preference WHERE PreferenceID = ?", (current_preference_id,))  # Make sure to maintain current_user_id somewhere
         preference = cursor.fetchone()
+
+        cursor.execute("SELECT Photolink FROM Person WHERE UserID = ?", (current_user_id,))
+        photo_link = cursor.fetchone()
+
         conn.close()
  
         if preference:
             gender_pref_entry.set(preference.GenderPreference)
-            min_age_slider.set(preference.MinAge)  # Update slider value
-            max_age_slider.set(preference.MaxAge)  # Update slider value
+            min_age_slider.set(preference.MinAge)  
+            max_age_slider.set(preference.MaxAge) 
             max_distance_entry.delete(0, tk.END)
             max_distance_entry.insert(0, preference.MaxDistance)
             relationship_type_entry.set(preference.RelationshipType)
- 
- 
-        # # Populate fields if preferences exist
-        # if preference:
-        #     gender_pref_entry.set(preference.GenderPreference)
-        #     min_age_entry.delete(0, tk.END)
-        #     min_age_entry.insert(0, preference.MinAge)
-        #     max_age_entry.delete(0, tk.END)
-        #     max_age_entry.insert(0, preference.MaxAge)
-        #     max_distance_entry.delete(0, tk.END)
-        #     max_distance_entry.insert(0, preference.MaxDistance)
-        #     relationship_type_entry.set(preference.RelationshipType)
+        
+        if photo_link and photo_link[0]:
+            load_user_photo(photo_link[0])
        
         profile_frame.pack_forget()
         preferences_frame.pack()
+
     except Exception as e:
         messagebox.showerror("Database Error", str(e))
- 
+
  
 def update_user_preferences():
     gender_pref = gender_pref_entry.get()
     min_age = min_age_slider.get()    
     max_age = max_age_slider.get()
-    # min_age = int(min_age_entry.get())
-    # max_age = int(max_age_entry.get())
     max_distance = int(max_distance_entry.get())
     relationship_type = relationship_type_entry.get()
    
@@ -94,8 +136,27 @@ def update_user_preferences():
         conn.close()
     except Exception as e:
         messagebox.showerror("Database Error", str(e))
- 
- 
+
+def load_user_photo(url):
+    global photo_label
+    try:
+        response = requests.get(url)
+        img_data = BytesIO(response.content)
+        img = Image.open(img_data)
+        img = img.resize((100, 150), Image.LANCZOS) 
+        img_tk = ImageTk.PhotoImage(img)
+
+        if photo_label is None: 
+            photo_label = tk.Label(profile_frame, image=img_tk)
+            photo_label.image = img_tk  
+            photo_label.pack(before=user_fullname_label) 
+        else:
+            photo_label.config(image=img_tk)  
+            photo_label.image = img_tk  
+
+    except Exception as e:
+        messagebox.showerror("Image Load Error", "Failed to load image: " + str(e))
+
 def create_account():
     email = entry_email_register.get()
     password = entry_password_register.get()
@@ -106,7 +167,8 @@ def create_account():
     address = entry_address.get()
     phone_number = entry_phone.get()  
     partner_value = entry_partner_values.get()
-    photo_link = ""
+    
+    photo_link = select_image() 
  
     try:
         conn = pyodbc.connect(
@@ -117,11 +179,10 @@ def create_account():
             'PWD=Findyourbestmatch123'
         )
         cursor = conn.cursor()
-        # salt = bcrypt.gen_salt(rounds=12)
-        # hashed_password = bcrypt.hash(password, salt)
         hasher = passlib.hash.bcrypt.using(rounds=12)
         hashed_password = hasher.hash(password)
  
+        print("Uploading photo URL to database:", photo_link) 
         cursor.execute("EXEC Insert_User @Fname = ?, @LName = ?, @DOB = ?, @Photo = ?, @Gender = ?, @Password = ?, @Email = ?, @PhoneNumber = ?, @Address = ?, @PartnerValues = ?",
                        (first_name, last_name, dob, photo_link, gender, hashed_password, email, phone_number, address, partner_value))
         conn.commit()
@@ -157,36 +218,25 @@ def login():
         cursor = conn.cursor()
  
         cursor.execute("""
-            SELECT UserID, FName, LName, Password
+            SELECT UserID, FName, LName, Password, Photolink
             FROM Person
             WHERE Email = ?
         """, (email,))
  
  
         user = cursor.fetchone()
-        # if user:
-        #     messagebox.showinfo("Login Success", "You have successfully logged in.")
-        #     current_user_id = user.UserID
-        #     current_preference_id = user.PreferenceID  
-        #     user_fullname_label.config(text=f"{user.FName} {user.LName}")  
-        #     login_frame.pack_forget()
-        #     profile_frame.pack()
         if user:
             stored_password = user[3]
-            # Check if the stored password is a valid string
-            if stored_password and isinstance(stored_password, str):
-                print("Stored Password:", stored_password)
-                hasher = passlib.hash.bcrypt
-                if hasher.verify(password, stored_password):
-                    messagebox.showinfo("Login Success", "You have successfully logged in.")
-                    current_user_id = user[0]
-                    user_fullname_label.config(text=f"{user[1]} {user[2]}")
-                    login_frame.pack_forget()
-                    profile_frame.pack()
-                else:
-                    messagebox.showerror("Login Failed", "Incorrect username or password")
+            if passlib.hash.bcrypt.verify(password, stored_password):
+                messagebox.showinfo("Login Success", "You have successfully logged in.")
+                current_user_id = user[0]
+                user_fullname_label.config(text=f"{user[1]} {user[2]}")
+                if user[4]:  # user[4] is the Photolink
+                    load_user_photo(user[4])
+                login_frame.pack_forget()
+                profile_frame.pack()
             else:
-                messagebox.showerror("Login Failed", "Invalid password stored in the system.")
+                messagebox.showerror("Login Failed", "Incorrect username or password")
         else:
             messagebox.showerror("Login Failed", "User not found")
         conn.close()
@@ -198,63 +248,24 @@ def update_match_status(match_id, status, match_frame):
         with connect_db() as conn:
             cursor = conn.cursor()
             if status:
-                # Update only if the logged-in user is UserID1 and set Accepted to 1
                 cursor.execute("""
-<<<<<<< HEAD
-                    UPDATE Has 
-                    SET Accepted = 1 
-                    WHERE MatchID = ? AND UserID1 = ?
-                """, (match_id, current_user_id))
-                conn.commit()
-                
-=======
                     UPDATE Has
                     SET Accepted = 1
                     WHERE MatchID = ? AND UserID1 = ?
                 """, (match_id, current_user_id))
                 conn.commit()
                
->>>>>>> f8545710ccf8c78d2eb1e379f5ea6529ca6e75d9
-                # Check if both users have accepted the match
                 cursor.execute("""
                     SELECT COUNT(*) FROM Has
                     WHERE MatchID = ? AND Accepted = 1
                 """, (match_id,))
                 count = cursor.fetchone()[0]
-<<<<<<< HEAD
-                
-                if count == 2:  # Assuming there are only two users per match
-                    messagebox.showinfo("Success", "Congrats, you have found your match!")
-                    match_frame.destroy()  # Optionally destroy the match frame
-
-            else:
-                # Decline match: remove entries from Match and Has tables
-                cursor.execute("""
-                    DELETE FROM Has 
-                    WHERE MatchID = ?
-                """, (match_id,))
-                cursor.execute("""
-                    DELETE FROM Match 
-                    WHERE MatchID = ?
-                """, (match_id,))
-                conn.commit()
-
-            messagebox.showinfo("Success", "Match updated successfully.")
-            match_frame.destroy()  # Destroy the frame containing the match info
-
-    except Exception as e:
-        messagebox.showerror("Database Error", f"Failed to update match status: {e}")
-
-
-
-=======
                
-                if count == 2:  # Assuming there are only two users per match
+                if count == 2:  
                     messagebox.showinfo("Success", "Congrats, you have found your match!")
-                    match_frame.destroy()  # Optionally destroy the match frame
+                    match_frame.destroy()
  
             else:
-                # Decline match: remove entries from Match and Has tables
                 cursor.execute("""
                     DELETE FROM Has
                     WHERE MatchID = ?
@@ -266,14 +277,13 @@ def update_match_status(match_id, status, match_frame):
                 conn.commit()
  
             messagebox.showinfo("Success", "Match updated successfully.")
-            match_frame.destroy()  # Destroy the frame containing the match info
+            match_frame.destroy()
  
     except Exception as e:
         messagebox.showerror("Database Error", f"Failed to update match status: {e}")
  
  
  
->>>>>>> f8545710ccf8c78d2eb1e379f5ea6529ca6e75d9
 def show_matches():
     potential_user_ids = fetch_all_users_ids()  
     for user_id in potential_user_ids:
@@ -301,11 +311,7 @@ def show_matches():
 
         for widget in matches_frame.winfo_children():
             widget.destroy()
-<<<<<<< HEAD
-
-=======
  
->>>>>>> f8545710ccf8c78d2eb1e379f5ea6529ca6e75d9
         if not matches:
             no_match_label = tk.Label(matches_frame, text="No match found.")
             no_match_label.pack()
@@ -313,17 +319,6 @@ def show_matches():
             for match in matches:
                 match_frame = tk.Frame(matches_frame)
                 match_frame.pack(pady=5, fill=tk.X)
-<<<<<<< HEAD
-
-                tk.Label(match_frame, text=f"Match with {match[3]} {match[4]}: {match[1]:.2f}%").pack(side=tk.LEFT)
-
-                accept_button = tk.Button(match_frame, text="Accept", command=lambda m=match, mf=match_frame: update_match_status(m[0], True, mf))
-                accept_button.pack(side=tk.RIGHT, padx=10)
-
-                decline_button = tk.Button(match_frame, text="Decline", command=lambda m=match, mf=match_frame: update_match_status(m[0], False, mf))
-                decline_button.pack(side=tk.RIGHT)
-
-=======
  
                 tk.Label(match_frame, text=f"Match with {match[3]} {match[4]}: {match[1]:.2f}%").pack(side=tk.LEFT)
                 view_profile_button = tk.Button(match_frame, text="View Profile", command=lambda uid=match[2]: view_user_profile(uid))
@@ -335,7 +330,6 @@ def show_matches():
                 decline_button = tk.Button(match_frame, text="Decline", command=lambda m=match, mf=match_frame: update_match_status(m[0], False, mf))
                 decline_button.pack(side=tk.RIGHT)
  
->>>>>>> f8545710ccf8c78d2eb1e379f5ea6529ca6e75d9
         show_matches_page()
 
     except Exception as e:
@@ -404,7 +398,7 @@ def show_matches_page():
     matches_frame.pack()
  
 app = tk.Tk()
-app.geometry('500x400')
+app.geometry('500x500')
 app.title("Best Match Dating System")
  
 # Welcome Frame
@@ -474,12 +468,17 @@ entry_phone.pack()
 tk.Label(register_frame, text="Partner Values:").pack()
 entry_partner_values = tk.Entry(register_frame, width=25)
 entry_partner_values.pack()
- 
+
+upload_image_btn = tk.Button(register_frame, text="Upload Image", command=lambda: entry_photo_link.insert(0, select_image()))
+upload_image_btn.pack()
+entry_photo_link = tk.Entry(register_frame, width=25)
+entry_photo_link.pack()
+
 tk.Button(register_frame, text="Create My Account", command=create_account).pack(pady=10)
  
 # Profile Frame
 profile_frame = tk.Frame(app)
- 
+
 user_fullname_label = tk.Label(profile_frame, text="", font=("Helvetica", 16))  
 user_fullname_label.pack(pady=20)
  
@@ -515,6 +514,9 @@ max_distance_entry.pack()
 tk.Label(preferences_frame, text="Relationship Type:").pack()
 relationship_type_entry = ttk.Combobox(preferences_frame, values=["Short-Term", "Long-Term", "Marriage", "Friendship"])
 relationship_type_entry.pack()
+
+photo_upload_btn = tk.Button(preferences_frame, text="Upload New Profile Picture", command=upload_and_update_photo)
+photo_upload_btn.pack(pady=10)
  
 update_preferences_btn = tk.Button(preferences_frame, text="Update Preferences", command=update_user_preferences)
 update_preferences_btn.pack(pady=10)
@@ -523,7 +525,5 @@ update_profile_btn.config(command=show_preferences)
  
 delete_account_btn = tk.Button(preferences_frame, text="Delete My Account", command=delete_account, bg='red', fg='white')
 delete_account_btn.pack(pady=10)
- 
- 
  
 app.mainloop()
