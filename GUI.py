@@ -1,9 +1,8 @@
 import tkinter as tk
 from tkinter import messagebox, ttk
 import pyodbc
-from tkcalendar import Calendar, DateEntry
+from tkcalendar import DateEntry
 import matchingalgo
-import threading
 
 import passlib.hash
 import cloudinary
@@ -15,8 +14,6 @@ from tkinter import filedialog
 from PIL import Image, ImageTk
 import requests
 from io import BytesIO
-
-
 
 current_user_id = None
 current_preference_id = None
