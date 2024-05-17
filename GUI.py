@@ -100,14 +100,54 @@ def show_preferences():
             max_distance_entry.insert(0, preference.MaxDistance)
             relationship_type_entry.set(preference.RelationshipType)
         
+
+        
         if photo_link and photo_link[0]:
             load_user_photo(photo_link[0])
        
         profile_frame.pack_forget()
         preferences_frame.pack()
+        submit_preferences_btn.pack(pady=10)
+        update_preferences_btn.pack_forget()  # Hide update button by default
+
+    # If it's an existing user with preferences, swap the buttons
+        if current_preference_id is not None:
+            submit_preferences_btn.pack_forget()  # Hide submit button
+            update_preferences_btn.pack(pady=10)
 
     except Exception as e:
         messagebox.showerror("Database Error", str(e))
+
+def submit_preferences():
+    gender_pref = gender_pref_entry.get()
+    min_age = min_age_slider.get()    
+    max_age = max_age_slider.get()
+    max_distance = int(max_distance_entry.get())
+    relationship_type = relationship_type_entry.get()
+
+    try:
+        conn = connect_db()
+        cursor = conn.cursor()
+        cursor.execute("""
+            EXEC dbo.Insert_New_User_Preferences 
+            @UserID = ?,
+            @GenderPreference = ?,
+            @MinAge = ?,
+            @MaxAge = ?,
+            @MaxDistance = ?,
+            @RelationshipType = ?
+        """, (current_user_id, gender_pref, min_age, max_age, max_distance, relationship_type))
+        
+        result = cursor.fetchone()
+        if result and result[0] == 'Success':
+            messagebox.showinfo("Success", "Preferences successfully set.")
+        elif result:
+            messagebox.showerror("Error", result[1])
+        conn.commit()
+    except Exception as e:
+        messagebox.showerror("Database Error", "Failed to set preferences: " + str(e))
+    finally:
+        conn.close()
 
  
 def update_user_preferences():
@@ -184,21 +224,37 @@ def create_account():
                        (first_name, last_name, dob, photo_link, gender, hashed_password, email, phone_number, address, partner_value))
         conn.commit()
         messagebox.showinfo("Account Created", "Your account has been created successfully.")
-        conn.close()
+         # Retrieve the new user's ID to use for preference setting
+        cursor.execute("SELECT UserID FROM Person WHERE Email = ?", (email,))
+        new_user = cursor.fetchone()
+        if new_user:
+            global current_user_id
+            current_user_id = new_user[0]
+
+        register_frame.pack_forget()
+        show_preferences()  # Redirect to preferences frame
+        messagebox.showinfo("Account Created", "Your account has been created successfully.")
     except pyodbc.DatabaseError as e:
-        error_message = str(e)
-        if "Missing required fields" in error_message:
-            messagebox.showerror("Missing Fields", "Please fill in all required fields.")
-        elif "User must be at least 18 years old" in error_message:
-            messagebox.showerror("Age Requirement", "User must be at least 18 years old.")
-        elif "Invalid email format" in error_message:
-            messagebox.showerror("Invalid Email", "Please enter a valid email address.")
-        elif "Failed to insert new user" in error_message:
-            messagebox.showerror("Database Error", "Failed to create account. Please try again later.")
-        else:
-            messagebox.showerror("Database Error", error_message)
-    except Exception as e:
-        messagebox.showerror("Error", str(e))
+        messagebox.showerror("Database Error", str(e))
+    finally:
+        conn.close()
+        
+        
+    #     conn.close()
+    # except pyodbc.DatabaseError as e:
+    #     error_message = str(e)
+    #     if "Missing required fields" in error_message:
+    #         messagebox.showerror("Missing Fields", "Please fill in all required fields.")
+    #     elif "User must be at least 18 years old" in error_message:
+    #         messagebox.showerror("Age Requirement", "User must be at least 18 years old.")
+    #     elif "Invalid email format" in error_message:
+    #         messagebox.showerror("Invalid Email", "Please enter a valid email address.")
+    #     elif "Failed to insert new user" in error_message:
+    #         messagebox.showerror("Database Error", "Failed to create account. Please try again later.")
+    #     else:
+    #         messagebox.showerror("Database Error", error_message)
+    # except Exception as e:
+    #     messagebox.showerror("Error", str(e))
  
 def login():
     global current_user_id, current_preference_id
@@ -515,6 +571,9 @@ relationship_type_entry.pack()
 photo_upload_btn = tk.Button(preferences_frame, text="Upload New Profile Picture", command=upload_and_update_photo)
 photo_upload_btn.pack(pady=10)
  
+submit_preferences_btn = tk.Button(preferences_frame, text="Submit Preferences", command=submit_preferences)
+submit_preferences_btn.pack(pady=10)
+
 update_preferences_btn = tk.Button(preferences_frame, text="Update Preferences", command=update_user_preferences)
 update_preferences_btn.pack(pady=10)
  
