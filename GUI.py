@@ -15,6 +15,8 @@ from PIL import Image, ImageTk
 import requests
 from io import BytesIO
 
+from tkinter import ttk
+
 current_user_id = None
 current_preference_id = None
 photo_label = None
@@ -50,6 +52,26 @@ def connect_db():
         'PWD=Findyourbestmatch123'
     )
  
+def show_profile_frame():
+    """Show the profile frame and hide others."""
+    login_frame.pack_forget()
+    register_frame.pack_forget()
+    preferences_frame.pack_forget()
+    hobbies_languages_frame.pack_forget()
+    matches_frame.pack_forget()
+    profile_frame.pack()
+
+def show_preferences_frame():
+    """Show the preferences frame and hide others."""
+    profile_frame.pack_forget()
+    preferences_frame.pack()
+
+def show_hobbies_languages_frame():
+    """Show the hobbies and languages frame and hide others."""
+    preferences_frame.pack_forget()
+    hobbies_languages_frame.pack()
+
+
 def show_login():
     welcome_frame.pack_forget()
     login_frame.pack()
@@ -118,6 +140,29 @@ def show_preferences():
     except Exception as e:
         messagebox.showerror("Database Error", str(e))
 
+
+def submit_hobbies_languages():
+    conn = connect_db()
+    cursor = conn.cursor()
+    print(current_preference_id)
+    try:
+        # Execute the stored procedures for updating languages and hobbies
+        cursor.execute("EXEC Update_Languages ?, ?, ?, ?, ?",
+                       (current_user_id, current_preference_id, language1_combobox.get(), language2_combobox.get(), language3_combobox.get()))
+        cursor.execute("EXEC Update_Hobbies ?, ?, ?, ?, ?, ?, ?, ?",
+                       (current_user_id, current_preference_id,
+                        hobby1_name_entry.get(), hobby1_desc_entry.get(),
+                        hobby2_name_entry.get(), hobby2_desc_entry.get(),
+                        hobby3_name_entry.get(), hobby3_desc_entry.get()))
+        conn.commit()
+        messagebox.showinfo("Update Successful", "Hobbies and Languages updated successfully.")
+        show_profile_frame()
+    except Exception as e:
+        messagebox.showerror("Database Error", str(e))
+    finally:
+        conn.close()
+
+
 def submit_preferences():
     gender_pref = gender_pref_entry.get()
     min_age = min_age_slider.get()    
@@ -141,6 +186,7 @@ def submit_preferences():
         result = cursor.fetchone()
         if result and result[0] == 'Success':
             messagebox.showinfo("Success", "Preferences successfully set.")
+            show_profile_frame()
         elif result:
             messagebox.showerror("Error", result[1])
         conn.commit()
@@ -170,29 +216,58 @@ def update_user_preferences():
                        (current_preference_id, gender_pref, min_age, max_age, max_distance, relationship_type))
         conn.commit()
         messagebox.showinfo("Success", "Preferences updated successfully.")
+        show_profile_frame()
         conn.close()
     except Exception as e:
         messagebox.showerror("Database Error", str(e))
 
 def load_user_photo(url):
     global photo_label
+    default_photo_url = "https://res.cloudinary.com/dish9tzjr/image/upload/v1715911966/no_pp_yiwfeu.jpg"
+
+    if not url:
+        url = default_photo_url
+
     try:
         response = requests.get(url)
-        img_data = BytesIO(response.content)
-        img = Image.open(img_data)
-        img = img.resize((100, 150), Image.LANCZOS) 
-        img_tk = ImageTk.PhotoImage(img)
+        if response.status_code == 200:
+            img_data = BytesIO(response.content)
+            img = Image.open(img_data)
+            img = img.resize((100, 120), Image.LANCZOS)
+            img_tk = ImageTk.PhotoImage(img)
 
-        if photo_label is None: 
-            photo_label = tk.Label(profile_frame, image=img_tk)
-            photo_label.image = img_tk  
-            photo_label.pack(before=user_fullname_label) 
+            if photo_label is None:
+                photo_label = tk.Label(profile_frame, image=img_tk)
+                photo_label.image = img_tk
+                photo_label.pack(before=user_fullname_label)
+            else:
+                photo_label.config(image=img_tk)
+                photo_label.image = img_tk
         else:
-            photo_label.config(image=img_tk)  
-            photo_label.image = img_tk  
-
+            raise Exception("Bad response from server")
     except Exception as e:
-        messagebox.showerror("Image Load Error", "Failed to load image: " + str(e))
+        print(f"Failed to load image from {url}, error: {e}")
+        # Load default image on error
+        try:
+            response = requests.get(default_photo_url)
+            img_data = BytesIO(response.content)
+            img = Image.open(img_data)
+            img = img.resize((100, 120), Image.LANCZOS)
+            img_tk = ImageTk.PhotoImage(img)
+            if photo_label is not None:
+                photo_label.config(image=img_tk)
+                photo_label.image = img_tk
+            else:
+                photo_label = tk.Label(profile_frame, image=img_tk)
+                photo_label.image = img_tk
+                photo_label.pack(before=user_fullname_label)
+        except Exception as ex:
+            print(f"Failed to load default image, error: {ex}")
+            if photo_label is None:
+                photo_label = tk.Label(profile_frame, text="No image available")
+                photo_label.pack(before=user_fullname_label)
+            else:
+                photo_label.config(text="No image available")
 
 def create_account():
     email = entry_email_register.get()
@@ -270,22 +345,35 @@ def login():
         )
         cursor = conn.cursor()
  
+        # Fetch user details based on email
         cursor.execute("""
             SELECT UserID, FName, LName, Password, Photolink
             FROM Person
             WHERE Email = ?
         """, (email,))
  
- 
         user = cursor.fetchone()
         if user:
             stored_password = user[3]
             if passlib.hash.bcrypt.verify(password, stored_password):
+                current_user_id = user[0]  # Update the current_user_id
                 messagebox.showinfo("Login Success", "You have successfully logged in.")
-                current_user_id = user[0]
                 user_fullname_label.config(text=f"{user[1]} {user[2]}")
-                if user[4]:  # user[4] is the Photolink
+                if user[4]:  # Load photo if it exists
                     load_user_photo(user[4])
+                
+                # Fetch the PreferenceID for the logged in user
+                cursor.execute("""
+                    SELECT PreferenceID
+                    FROM Preference
+                    WHERE UserID = ?
+                """, (current_user_id,))
+                preference = cursor.fetchone()
+                if preference:
+                    current_preference_id = preference[0]  # Update the current_preference_id
+                else:
+                    current_preference_id = None  # Reset if no preferences found
+
                 login_frame.pack_forget()
                 profile_frame.pack()
             else:
@@ -331,6 +419,7 @@ def update_match_status(match_id, status, match_frame):
  
             messagebox.showinfo("Success", "Match updated successfully.")
             match_frame.destroy()
+            show_profile_frame()
  
     except Exception as e:
         messagebox.showerror("Database Error", f"Failed to update match status: {e}")
@@ -422,6 +511,10 @@ def delete_account():
             messagebox.showerror("Database Error", str(e))
         finally:
             conn.close()
+
+def switch_to_hobbies_languages():
+    preferences_frame.pack_forget()
+    hobbies_languages_frame.pack()
 
 def view_user_profile(user_id):
     try:
@@ -576,10 +669,76 @@ submit_preferences_btn.pack(pady=10)
 
 update_preferences_btn = tk.Button(preferences_frame, text="Update Preferences", command=update_user_preferences)
 update_preferences_btn.pack(pady=10)
+
+next_page_btn = tk.Button(preferences_frame, text="Next Page (Update Hobby and Languages)", command=lambda: switch_to_hobbies_languages())
+next_page_btn.pack(pady=10)
  
 update_profile_btn.config(command=show_preferences)
  
 delete_account_btn = tk.Button(preferences_frame, text="Delete My Account", command=delete_account, bg='red', fg='white')
 delete_account_btn.pack(pady=10)
- 
+
+# Creating a new frame for hobbies and languages
+hobbies_languages_frame = tk.Frame(app)
+
+languages = [
+    "Afrikaans", "Albanian", "Amharic", "Arabic", "Armenian", "Azerbaijani", 
+    "Basque", "Belarusian", "Bengali", "Bosnian", "Bulgarian", "Burmese", 
+    "Catalan", "Cebuano", "Chichewa", "Chinese (Simplified)", "Chinese (Traditional)", 
+    "Corsican", "Croatian", "Czech", "Danish", "Dutch", "English", "Esperanto", 
+    "Estonian", "Filipino", "Finnish", "French", "Frisian", "Galician", "Georgian", 
+    "German", "Greek", "Gujarati", "Haitian Creole", "Hausa", "Hawaiian", "Hebrew", 
+    "Hindi", "Hmong", "Hungarian", "Icelandic", "Igbo", "Indonesian", "Irish", 
+    "Italian", "Japanese", "Javanese", "Kannada", "Kazakh", "Khmer", "Kinyarwanda", 
+    "Korean", "Kurdish (Kurmanji)", "Kyrgyz", "Lao", "Latin", "Latvian", "Lithuanian", 
+    "Luxembourgish", "Macedonian", "Malagasy", "Malay", "Malayalam", "Maltese", 
+    "Maori", "Marathi", "Mongolian", "Nepali", "Norwegian", "Odia (Oriya)", "Pashto", 
+    "Persian", "Polish", "Portuguese", "Punjabi", "Romanian", "Russian", "Samoan", 
+    "Scots Gaelic", "Serbian", "Sesotho", "Shona", "Sindhi", "Sinhala", "Slovak", 
+    "Slovenian", "Somali", "Spanish", "Sundanese", "Swahili", "Swedish", "Tajik", 
+    "Tamil", "Tatar", "Telugu", "Thai", "Turkish", "Turkmen", "Ukrainian", "Urdu", 
+    "Uyghur", "Uzbek", "Vietnamese", "Welsh", "Xhosa", "Yiddish", "Yoruba", "Zulu"
+]
+# Labels and entries for languages
+tk.Label(hobbies_languages_frame, text="Language 1:").pack()
+language1_combobox = ttk.Combobox(hobbies_languages_frame, values=languages, width=23)
+language1_combobox.pack()
+
+tk.Label(hobbies_languages_frame, text="Language 2:").pack()
+language2_combobox = ttk.Combobox(hobbies_languages_frame, values=languages, width=23)
+language2_combobox.pack()
+
+tk.Label(hobbies_languages_frame, text="Language 3:").pack()
+language3_combobox = ttk.Combobox(hobbies_languages_frame, values=languages, width=23)
+language3_combobox.pack()
+
+# Labels and entries for hobbies
+tk.Label(hobbies_languages_frame, text="Hobby 1 Name:").pack()
+hobby1_name_entry = tk.Entry(hobbies_languages_frame, width=25)
+hobby1_name_entry.pack()
+
+tk.Label(hobbies_languages_frame, text="Hobby 1 Description:").pack()
+hobby1_desc_entry = tk.Entry(hobbies_languages_frame, width=50)
+hobby1_desc_entry.pack()
+
+tk.Label(hobbies_languages_frame, text="Hobby 2 Name:").pack()
+hobby2_name_entry = tk.Entry(hobbies_languages_frame, width=25)
+hobby2_name_entry.pack()
+
+tk.Label(hobbies_languages_frame, text="Hobby 2 Description:").pack()
+hobby2_desc_entry = tk.Entry(hobbies_languages_frame, width=50)
+hobby2_desc_entry.pack()
+
+tk.Label(hobbies_languages_frame, text="Hobby 3 Name:").pack()
+hobby3_name_entry = tk.Entry(hobbies_languages_frame, width=25)
+hobby3_name_entry.pack()
+
+tk.Label(hobbies_languages_frame, text="Hobby 3 Description:").pack()
+hobby3_desc_entry = tk.Entry(hobbies_languages_frame, width=50)
+hobby3_desc_entry.pack()
+
+# Button to submit languages and hobbies
+submit_hobbies_languages_btn = tk.Button(hobbies_languages_frame, text="Submit Hobbies & Languages", command=submit_hobbies_languages)
+submit_hobbies_languages_btn.pack(pady=10)
+
 app.mainloop()
