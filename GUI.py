@@ -140,6 +140,7 @@ def show_preferences():
     except Exception as e:
         messagebox.showerror("Database Error", str(e))
 
+<<<<<<< HEAD
 
 def submit_hobbies_languages():
     conn = connect_db()
@@ -162,6 +163,38 @@ def submit_hobbies_languages():
     finally:
         conn.close()
 
+=======
+# def submit_preferences():
+#     gender_pref = gender_pref_entry.get()
+#     min_age = min_age_slider.get()    
+#     max_age = max_age_slider.get()
+#     max_distance = int(max_distance_entry.get())
+#     relationship_type = relationship_type_entry.get()
+
+#     try:
+#         conn = connect_db()
+#         cursor = conn.cursor()
+#         cursor.execute("""
+#             EXEC dbo.Insert_New_User_Preferences 
+#             @UserID = ?,
+#             @GenderPreference = ?,
+#             @MinAge = ?,
+#             @MaxAge = ?,
+#             @MaxDistance = ?,
+#             @RelationshipType = ?
+#         """, (current_user_id, gender_pref, min_age, max_age, max_distance, relationship_type))
+        
+#         result = cursor.fetchone()
+#         if result and result[0] == 'Success':
+#             messagebox.showinfo("Success", "Preferences successfully set.")
+#         elif result:
+#             messagebox.showerror("Error", result[1])
+#         conn.commit()
+#     except Exception as e:
+#         messagebox.showerror("Database Error", "Failed to set preferences: " + str(e))
+#     finally:
+#         conn.close()
+>>>>>>> 700eac897040cf558a0b0c4b053e5b6c4a3f3942
 
 def submit_preferences():
     gender_pref = gender_pref_entry.get()
@@ -185,8 +218,15 @@ def submit_preferences():
         
         result = cursor.fetchone()
         if result and result[0] == 'Success':
+            global current_preference_id
+            current_preference_id = result[2]  # Assuming the stored procedure returns the new PreferenceID at index 2
             messagebox.showinfo("Success", "Preferences successfully set.")
+<<<<<<< HEAD
             show_profile_frame()
+=======
+            preferences_frame.pack_forget()
+            hobby_language_frame.pack()
+>>>>>>> 700eac897040cf558a0b0c4b053e5b6c4a3f3942
         elif result:
             messagebox.showerror("Error", result[1])
         conn.commit()
@@ -269,42 +309,82 @@ def load_user_photo(url):
             else:
                 photo_label.config(text="No image available")
 
+# def create_account():
+#     email = entry_email_register.get()
+#     password = entry_password_register.get()
+#     first_name = entry_fname.get()
+#     last_name = entry_lname.get()
+#     dob = cal.get_date().strftime('%Y-%m-%d')  
+#     gender = gender_combobox.get()
+#     address = entry_address.get()
+#     phone_number = entry_phone.get()  
+#     partner_value = entry_partner_values.get()
+    
+#     photo_link = select_image() 
+ 
+#     try:
+#         conn = pyodbc.connect(
+#             'DRIVER={ODBC Driver 17 for SQL Server};'
+#             'SERVER=golem.csse.rose-hulman.edu;'
+#             'DATABASE=BestMatchDatabase;'
+#             'UID=bestmatch_esm;'
+#             'PWD=Findyourbestmatch123'
+#         )
+#         cursor = conn.cursor()
+#         hasher = passlib.hash.bcrypt.using(rounds=12)
+#         hashed_password = hasher.hash(password)
+ 
+#         print("Uploading photo URL to database:", photo_link) 
+#         cursor.execute("EXEC Insert_User @Fname = ?, @LName = ?, @DOB = ?, @Photo = ?, @Gender = ?, @Password = ?, @Email = ?, @PhoneNumber = ?, @Address = ?, @PartnerValues = ?",
+#                        (first_name, last_name, dob, photo_link, gender, hashed_password, email, phone_number, address, partner_value))
+#         conn.commit()
+#         messagebox.showinfo("Account Created", "Your account has been created successfully.")
+#          # Retrieve the new user's ID to use for preference setting
+#         cursor.execute("SELECT UserID FROM Person WHERE Email = ?", (email,))
+#         new_user = cursor.fetchone()
+#         if new_user:
+#             global current_user_id
+#             current_user_id = new_user[0]
+
+#         register_frame.pack_forget()
+#         show_preferences()  # Redirect to preferences frame
+#         messagebox.showinfo("Account Created", "Your account has been created successfully.")
+#     except pyodbc.DatabaseError as e:
+#         messagebox.showerror("Database Error", str(e))
+#     finally:
+#         conn.close()
 def create_account():
     email = entry_email_register.get()
     password = entry_password_register.get()
     first_name = entry_fname.get()
     last_name = entry_lname.get()
-    dob = cal.get_date().strftime('%Y-%m-%d')  
+    dob = cal.get_date().strftime('%Y-%m-%d')
     gender = gender_combobox.get()
     address = entry_address.get()
-    phone_number = entry_phone.get()  
+    phone_number = entry_phone.get()
     partner_value = entry_partner_values.get()
     
-    photo_link = select_image() 
+    photo_link = select_image()
  
     try:
-        conn = pyodbc.connect(
-            'DRIVER={ODBC Driver 17 for SQL Server};'
-            'SERVER=golem.csse.rose-hulman.edu;'
-            'DATABASE=BestMatchDatabase;'
-            'UID=bestmatch_esm;'
-            'PWD=Findyourbestmatch123'
-        )
+        conn = connect_db()
         cursor = conn.cursor()
         hasher = passlib.hash.bcrypt.using(rounds=12)
         hashed_password = hasher.hash(password)
  
-        print("Uploading photo URL to database:", photo_link) 
+        print("Uploading photo URL to database:", photo_link)
         cursor.execute("EXEC Insert_User @Fname = ?, @LName = ?, @DOB = ?, @Photo = ?, @Gender = ?, @Password = ?, @Email = ?, @PhoneNumber = ?, @Address = ?, @PartnerValues = ?",
                        (first_name, last_name, dob, photo_link, gender, hashed_password, email, phone_number, address, partner_value))
         conn.commit()
-        messagebox.showinfo("Account Created", "Your account has been created successfully.")
-         # Retrieve the new user's ID to use for preference setting
-        cursor.execute("SELECT UserID FROM Person WHERE Email = ?", (email,))
+
+        # Fetch the new user's ID and full name to use for preference setting
+        cursor.execute("SELECT UserID, Fname, Lname FROM Person WHERE Email = ?", (email,))
         new_user = cursor.fetchone()
         if new_user:
             global current_user_id
             current_user_id = new_user[0]
+            # Set user's full name in the profile label
+            user_fullname_label.config(text=f"{new_user[1]} {new_user[2]}")
 
         register_frame.pack_forget()
         show_preferences()  # Redirect to preferences frame
@@ -313,6 +393,7 @@ def create_account():
         messagebox.showerror("Database Error", str(e))
     finally:
         conn.close()
+
         
         
     #     conn.close()
@@ -537,7 +618,49 @@ def view_user_profile(user_id):
     except Exception as e:
         messagebox.showerror("Database Error", str(e))
 
- 
+def submit_hobby_language():
+    try:
+        conn = connect_db()
+        cursor = conn.cursor()
+
+        # Handle the hobby submission with checks for empty fields
+        for i in range(1, 4):
+            hobby_name = globals()[f'entry_hobby_name_{i}'].get().strip()
+            hobby_description = globals()[f'entry_hobby_description_{i}'].get().strip()
+            if hobby_name and hobby_description:
+                cursor.execute("EXEC dbo.Insert_Hobby_NewUser @Name=?, @Description=?, @UserID=?, @PreferenceID=?", 
+                               (hobby_name, hobby_description, current_user_id, current_preference_id))
+
+        # Handle the language submission with deduplication
+        languages_selected = set()
+        for i in range(1, 4):
+            language = globals()[f'language_combobox_{i}'].get().strip()
+            if language and language not in languages_selected:
+                languages_selected.add(language)
+                cursor.execute("EXEC dbo.Insert_Language @Name=?, @UserID=?, @PreferenceID=?", 
+                               (language, current_user_id, current_preference_id))
+
+        conn.commit()
+        messagebox.showinfo("Success", "Hobbies and languages saved successfully.")
+        
+        # Optionally, clear the input fields after successful submission
+        for i in range(1, 4):
+            globals()[f'entry_hobby_name_{i}'].delete(0, tk.END)
+            globals()[f'entry_hobby_description_{i}'].delete(0, tk.END)
+            globals()[f'language_combobox_{i}'].set('')
+
+        # Redirect to profile frame
+        hobby_language_frame.pack_forget()
+        profile_frame.pack()
+
+    except Exception as e:
+        conn.rollback()
+        messagebox.showerror("Submission Error", str(e))
+    finally:
+        conn.close()
+
+
+
 def show_matches_page():
     profile_frame.pack_forget()
    
@@ -678,6 +801,7 @@ update_profile_btn.config(command=show_preferences)
 delete_account_btn = tk.Button(preferences_frame, text="Delete My Account", command=delete_account, bg='red', fg='white')
 delete_account_btn.pack(pady=10)
 
+<<<<<<< HEAD
 # Creating a new frame for hobbies and languages
 hobbies_languages_frame = tk.Frame(app)
 
@@ -740,5 +864,30 @@ hobby3_desc_entry.pack()
 # Button to submit languages and hobbies
 submit_hobbies_languages_btn = tk.Button(hobbies_languages_frame, text="Submit Hobbies & Languages", command=submit_hobbies_languages)
 submit_hobbies_languages_btn.pack(pady=10)
+=======
+# Define available languages
+languages = ['English', 'Spanish', 'French', 'German', 'Chinese', 'Japanese', 'Russian']
+
+# Define the frame for entering hobby and language information
+hobby_language_frame = tk.Frame(app)
+
+# Loop to create multiple hobby and language entries
+for i in range(1, 4):
+    tk.Label(hobby_language_frame, text=f"Hobby {i} Name:").pack()
+    globals()[f'entry_hobby_name_{i}'] = tk.Entry(hobby_language_frame)
+    globals()[f'entry_hobby_name_{i}'].pack()
+
+    tk.Label(hobby_language_frame, text=f"Hobby {i} Description:").pack()
+    globals()[f'entry_hobby_description_{i}'] = tk.Entry(hobby_language_frame)
+    globals()[f'entry_hobby_description_{i}'].pack()
+
+    tk.Label(hobby_language_frame, text=f"Language {i}:").pack()
+    globals()[f'language_combobox_{i}'] = ttk.Combobox(hobby_language_frame, values=languages)
+    globals()[f'language_combobox_{i}'].pack()
+
+submit_hobby_language_btn = tk.Button(hobby_language_frame, text="Submit Hobbies and Languages", command=submit_hobby_language)
+submit_hobby_language_btn.pack(pady=10)
+
+>>>>>>> 700eac897040cf558a0b0c4b053e5b6c4a3f3942
 
 app.mainloop()
